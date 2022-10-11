@@ -1,4 +1,4 @@
-local canvases = require("canvas")
+local canvases = require("modules.canvas")
 local PixelCanvas = canvases.PixelCanvas
 
 -- local palMap = {

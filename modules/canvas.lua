@@ -1,7 +1,7 @@
 local floor, ceil, min, max, abs, concat = math.floor, math.ceil, math.min, math.max, math.abs, table.concat
 local function round(x) return floor(x + 0.5) end
 
-local _ = require("score")
+local _ = require("util.score")
 
 ---@alias Color
 ---| 1
