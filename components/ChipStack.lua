@@ -45,10 +45,10 @@ end
 
 ---@param props { x: integer, y: integer, chipCount: integer, chipValue: integer }
 return Solyd.wrapComponent("ChipStack", function(props)
-    local canvas = useCanvas()
-
     local height = chipStackTop.height + (props.chipCount - 1) * chipStackMiddle.height + chipStackBottom.height
     local offsetY = height - chipStackTop.height - chipStackMiddle.height - chipStackBottom.height
+
+    -- local canvas = useCanvas(chipStackTop.width + 2, height + 2)
 
     local sprite = Solyd.useMemo(function()
         local canv = PixelCanvas(chipStackTop.width + 2, height + 2)
@@ -65,11 +65,12 @@ return Solyd.wrapComponent("ChipStack", function(props)
     end, { props.chipCount, props.chipValue })
 
 
-    return Sprite {
-        sprite = sprite,
-        x = math.floor(props.x/2)*2,
-        y = math.floor((props.y - offsetY)/3)*3
-    }, {
-        canvas = canvas,
-    }
+    return nil, { canvas = {sprite, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3, chk = true} }
+    -- return Sprite {
+    --     sprite = sprite,
+    --     x = 1,
+    --     y = 1
+    -- }, {
+    --     canvas = {canvas, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3},
+    -- }
 end)

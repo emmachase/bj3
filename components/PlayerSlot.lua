@@ -80,11 +80,11 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local stood, setStood = Solyd.useState(false)
 
     -- I have no fucking clue whats happening here
-    local dmx = ((getDeckDims(#cards) - getDeckDims(#afCards))/2 + (#afCards > 0 and -1 or 0))*(#afCards > 0 and 1 or 0)
+    local dmx = ((getDeckDims(#cards) - getDeckDims(#afCards))/2)*(#afCards > 0 and 1 or 0)
     local amx = -math.min(dmx, (t or 0)*2*dmx)
 
     if isFilled then
-        local canAct = not didBust and not t and not dealerContext.revealed and not stood
+        local canAct = not didBust and not dealerContext.revealed and not stood
         
         local valueText
         if softValue > 0 then
@@ -100,10 +100,10 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             --     key = "filled",
             --     children = {
                 Sprite { sprite = hitSprite, x = x, y = y },
-                Hand { x=x-1+(props.width - getDeckDims(#afCards))/2+amx -- x+1
-                , y=y+24, cards = afCards, clear = clearColor },
-                Hand { x=x-1+(props.width + getDeckDims(#afCards) - getDeckDims(#cards - #afCards) - dmx)/2 - (#afCards > 0 and 1 or -1)       --x+(props.width - getDeckDims(#cards))/2 -- x+1
-                , y=y+24+math.max(0, props.height-props.height*(t or 1)), cards = _.intersectSeq(afCards, cards), clear = clearColor },
+                Hand { x=x+(props.width - getDeckDims(#afCards))/2+amx -- x+1
+                , y=y+26, cards = afCards, clear = clearColor },
+                Hand { x=x+(props.width + getDeckDims(#afCards) - getDeckDims(#cards - #afCards) - dmx)/2 - (#afCards > 0 and 2 or 0)       --x+(props.width - getDeckDims(#cards))/2 -- x+1
+                , y=y+26+math.max(0, props.height-props.height*(t or 1)), cards = _.intersectSeq(afCards, cards), clear = clearColor },
                 Button {
                     x = x+2,
                     y = y+2,

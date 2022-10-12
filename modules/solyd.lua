@@ -109,7 +109,7 @@ function Solyd.useEffect(fun, deps)
                 memo.unmount()
                 memo.deps = deps
                 memo.unmount = fun()
-                
+
                 break
             end
         end
@@ -152,7 +152,7 @@ function Solyd.getTopologicalContext(tree, keys)
     local queue = {tree}
     while #queue > 0 do
         local node = table.remove(queue, 1)
-        
+
         if node.context then
             for i, key in ipairs(keys) do
                 if node.context[key] then
@@ -287,9 +287,7 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
                 end
             end
         end
-        
-        -- forceRender = forceRender or contextChanged
-        
+
         hook.context = context
         hook.contextConsumers = {}
 
@@ -312,12 +310,12 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
         if newTree.__tag == "element" and ((not previousTree) or previousTree.dom.src ~= nil) then
             local oldChild = previousTree and previousTree.dom
             if oldChild and oldChild.src.component == newTree.component then
-                nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(oldChild, newTree, hook) } --, forceRender) }
+                nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(oldChild, newTree, hook) }
             else
                 if oldChild then
                     _unmount(previousTree) -- component changed, unmount old tree
                 end
-                nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(nil, newTree, hook) } --, forceRender) }
+                nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(nil, newTree, hook) }
             end
         else
             local oldChildren = previousTree and previousTree.dom ---@type table?
@@ -332,7 +330,7 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
             local children = {}
 
             local previousUniqueComponents = previousTree and previousTree.keyed or {}
-            
+
             local nextUniqueComponents, nIndex = {}, 0
             for i, child in ipairs(newTree) do
                 if type(child) == "table" and child.key then
@@ -341,7 +339,7 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
                         prevMatch = nil
                     end
 
-                    local newChild = _render(prevMatch, child, hook) --, forceRender)
+                    local newChild = _render(prevMatch, child, hook)
                     nextUniqueComponents[child.key] = newChild
                     children[i] = newChild
                 elseif type(child) == "table" then
@@ -351,7 +349,7 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
                         prevMatch = nil
                     end
 
-                    local newChild = _render(prevMatch, child, hook) --, forceRender)
+                    local newChild = _render(prevMatch, child, hook)
                     nextUniqueComponents[nIndex] = newChild
                     children[i] = newChild
                 else
@@ -422,7 +420,7 @@ local function _cleanDirty(tree)
     for i = 1, #queuedMounts do
         local triple = queuedMounts[i]
         local parent, node, originalNode = triple[1], triple[2], triple[3]
-        
+
         if parent and parent.dom then
             if parent.dom and parent.dom.src and parent.dom.src.__tag == "element" then
                 assert(parent.dom == originalNode, "parent dom is not original node")
@@ -465,12 +463,6 @@ end
 ---@param rootComponent SolydElement
 ---@return table?
 function Solyd.render(previousTree, rootComponent)
-    -- local tree = previousTree
-    -- if previousTree then
-    --     tree = _cleanDirty(previousTree)
-    -- end
-
-    -- tree = _render(tree, rootComponent)
     local tree = _render(previousTree, rootComponent)
     tree = _cleanDirty(tree)
 
@@ -482,8 +474,7 @@ end
 ---@param component fun(props: P): table
 ---@return fun(props: P): table
 function Solyd.wrapComponent(name, component)
-    return function(...)
-        local props = ...
+    return function(props)
         return Solyd.createElement(name, component, props, props.key)
     end
 end

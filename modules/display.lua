@@ -7,6 +7,9 @@ local TextCanvas = canvases.TextCanvas
 local mon = peripheral.find("monitor")
 mon.setTextScale(0.5)
 
+-- Set Riko Palette
+require("util.riko")(mon)
+
 local ccCanvas = TeletextCanvas(colors.green, mon.getSize())
 ccCanvas:outputFlush(mon)
 
@@ -25,9 +28,6 @@ for y = 1, bgCanvas.height do
         -- bgCanvas:setPixel(x, y, (x/2-y/2) % 2 < 1 and colors.green or colors.lime)
     end
 end
-
--- Set Riko Palette
-require("util.riko")(mon)
 
 return {
     ccCanvas = ccCanvas,

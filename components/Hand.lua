@@ -27,12 +27,12 @@ local function getDeckDims(deckCnt)
       return 0, 0
     end
 
-    return cardFirstAnimated.width + (deckCnt - 1) * cardMiddle.width + cardLast.width, cardFirstAnimated.height
+    return cardFirstAnimated.width + (deckCnt - 1) * cardMiddle.width + cardLast.width + 1, cardFirstAnimated.height
 end
 
 ---@param props { x: number, y: number, cards: Card[], clear: integer? }
 local Hand = Solyd.wrapComponent("Hand", function(props)
-    local canvas = useCanvas()
+    local canvas = useCanvas(getDeckDims(#props.cards))
 
     local sprite = Solyd.useMemo(function()
         local cards = props.cards
@@ -43,7 +43,7 @@ local Hand = Solyd.wrapComponent("Hand", function(props)
         local canv = PixelCanvas(getDeckDims(#props.cards))
 
         local suitSprites = {hearts=suitHeart,diamonds=suitDiamond,spades=suitSpade,clubs=suitClub}
-        local colors = {hearts=colors.red,diamonds=colors.red,spades=colors.black,clubs=colors.black}
+        local cardColors = {hearts=colors.red,diamonds=colors.red,spades=colors.black,clubs=colors.black}
 
         local function drawFaceValue(v, c, x, y)
             if v == "10" then
@@ -65,7 +65,7 @@ local Hand = Solyd.wrapComponent("Hand", function(props)
             canv:drawCanvas(cardBack, x + 2, y + 18)
         else
             canv:drawCanvas(suitSprites[firstCard.suit], x + 2, y + 2)
-            drawFaceValue(firstCard.rank, colors[firstCard.suit], x + 4, y + 19)
+            drawFaceValue(firstCard.rank, cardColors[firstCard.suit], x + 4, y + 19)
         end
         x = x + 10
 
@@ -78,7 +78,7 @@ local Hand = Solyd.wrapComponent("Hand", function(props)
                 canv:drawCanvas(cardBack, x + 3, y + 18)
             else
                 canv:drawCanvas(suitSprites[thisCard.suit], x + 3, y + 2)
-                drawFaceValue(thisCard.rank, colors[thisCard.suit], x + 5, y + 19)
+                drawFaceValue(thisCard.rank, cardColors[thisCard.suit], x + 5, y + 19)
             end
             x = x + 11
         end
@@ -91,15 +91,20 @@ local Hand = Solyd.wrapComponent("Hand", function(props)
             canv:drawCanvas(cardBack, x, y + 18)
         else
             canv:drawCanvas180(suitSprites[lastCard.suit], x, y + 18)
-            drawFaceValue(lastCard.rank, colors[lastCard.suit], x + 2, y + 3)
+            drawFaceValue(lastCard.rank, cardColors[lastCard.suit], x + 2, y + 3)
         end
+
+        -- print(colors.green)
+        -- print(colors.lime)
+        canv:mapColors({ [colors.green] = (props.clear or colors.lime) })
 
         return canv
     end, { props.cards })
 
-    return Sprite { sprite = sprite, x = props.x, y = props.y, remapFrom = colors.green, remapTo = props.clear or colors.lime }, {
-        canvas = canvas,
-    }
+    return nil, { canvas = { sprite, props.x, props.y } }
+    -- return Sprite { sprite = sprite, x = 1, y = 1, remapFrom = colors.green, remapTo = props.clear or colors.lime }, {
+    --     canvas = {canvas, props.x, props.y},
+    -- }
 end)
 
 return {

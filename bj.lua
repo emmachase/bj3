@@ -1,13 +1,12 @@
 --- Imports
 local _ = require("util.score")
 
+local display = require("modules.display")
+
 local Solyd = require("modules.solyd")
 local hooks = require("modules.hooks")
 local useCanvas = hooks.useCanvas
 
-local display = require("modules.display")
-
-local Sprite = require("components.Sprite")
 local BigText = require("components.BigText")
 local ChipStack = require("components.ChipStack")
 local PlayerSlot = require("components.PlayerSlot")
@@ -22,39 +21,39 @@ local Main = Solyd.wrapComponent("Main", function(props)
     local dealerContext = getDealerContext(standCount)
 
     return _.flat {
-        BigText { text="Justy Blackjack", x=50, y=10, bg=colors.lime },
+        BigText { text="Justy Blackjack", x=124, y=10, bg=colors.lime },
 
-        ChipStack { 
-            x = 10 + 10*0 + math.cos(props.t)*50+50, 
-            y = 9 + math.sin(props.t)*30+50, 
+        ChipStack {
+            x = 10 + 10*0 + math.cos(props.t)*50+50,
+            y = 9 + math.sin(props.t)*30+50,
             chipCount = 1,
             chipValue = 1
         },
 
-        ChipStack { 
-            x = 10 + 10 + math.cos(props.t)*50+50, 
-            y = 9 + math.sin(props.t)*30+50, 
+        ChipStack {
+            x = 10 + 10 + math.cos(props.t)*50+50,
+            y = 9 + math.sin(props.t)*30+50,
             chipCount = 2,
             chipValue = 5
         },
 
-        ChipStack { 
-            x = 10 + 10*2 + math.cos(props.t)*50+50, 
-            y = 9 + math.sin(props.t)*30+50, 
+        ChipStack {
+            x = 10 + 10*2 + math.cos(props.t)*50+50,
+            y = 9 + math.sin(props.t)*30+50,
             chipCount = 4,
             chipValue = 10
         },
-       
-        ChipStack { 
-            x = 10 + 10*3 + math.cos(props.t)*50+50, 
-            y = 9 + math.sin(props.t)*30+50, 
+
+        ChipStack {
+            x = 10 + 10*3 + math.cos(props.t)*50+50,
+            y = 9 + math.sin(props.t)*30+50,
             chipCount = 5,
             chipValue = 25
         },
 
-        ChipStack { 
-            x = 10 + 10*4 + math.cos(props.t)*50+50, 
-            y = 9 + math.sin(props.t)*30+50, 
+        ChipStack {
+            x = 10 + 10*4 + math.cos(props.t)*50+50,
+            y = 9 + math.sin(props.t)*30+50,
             chipCount = 4,
             chipValue = 100
         },
@@ -63,13 +62,14 @@ local Main = Solyd.wrapComponent("Main", function(props)
         _.rangeMap(3, function(i)
             local width = math.floor((canvas.width - 10)/3)-2
             return PlayerSlot {
-                x = 3 + (i-1)*(width+6), width = width, height = 75,
+                x = 3 + (i-1)*(width+6),
+                width = width, height = 75,
                 onStand = function()
                     setStandCount(standCount + 1)
                 end
             }
         end),
-    }, { canvas = canvas, dealerContext = dealerContext }
+    }, { canvas = {canvas, 1, 1}, dealerContext = dealerContext }
 end)
 
 
@@ -80,16 +80,63 @@ local t = 0
 local tree = nil
 local lastClock = os.epoch("utc")
 
+local lastCanvasStack = {}
+local weed
+local function diffCanvasStack(newStack)
+    -- Find any canvases that were removed
+    local removed = {}
+    local kept = {}
+    for i = 1, #lastCanvasStack do
+        removed[lastCanvasStack[i][1]] = lastCanvasStack[i]
+    end
+    for i = 1, #newStack do
+        if newStack[i].chk then
+            weed = newStack[i]
+            local numdirty = 0
+            for _, _ in pairs(newStack[i][1].dirty) do
+                numdirty = numdirty + 1
+            end
+        end
+
+        if removed[newStack[i][1]] then
+            kept[#kept+1] = newStack[i]
+            removed[newStack[i][1]] = nil
+        end
+    end
+
+    -- Mark rectangle of removed canvases on bgCanvas (TODO: using bgCanvas is a hack)
+    for _, canvas in pairs(removed) do
+        display.bgCanvas:dirtyRect(canvas[2], canvas[3], canvas[1].width, canvas[1].height)
+    end
+
+    -- For each kept canvas, mark the bounds if the new bounds are different
+    for i = 1, #kept do
+        local oldCanvas = lastCanvasStack[i]
+        local newCanvas = newStack[i]
+        if oldCanvas[2] ~= newCanvas[2] or oldCanvas[3] ~= newCanvas[3] then
+            -- TODO: Optimize this?
+            display.bgCanvas:dirtyRect(oldCanvas[2], oldCanvas[3], oldCanvas[1].width, oldCanvas[1].height)
+            display.bgCanvas:dirtyRect(newCanvas[2], newCanvas[3], newCanvas[1].width, newCanvas[1].height)
+        end
+    end
+
+    lastCanvasStack = newStack
+end
+
 while true do
     tree = Solyd.render(tree, Main {t = t})
 
     local context = Solyd.getTopologicalContext(tree, { "canvas", "aabb" })
-    -- print(#context.canvas)
 
-    display.ccCanvas:composite(display.bgCanvas, unpack(context.canvas))
+    diffCanvasStack(context.canvas)
+
+    local t1 = os.epoch("utc")
+    display.ccCanvas:composite({display.bgCanvas, 1, 1}, unpack(context.canvas))
     display.ccCanvas:outputDirty(display.mon)
+    local t2 = os.epoch("utc")
+    print("Render time: " .. (t2-t1) .. "ms")
 
--- TODO: Collect unmounted canvases and mark screen as dirty?
+    -- TODO: Collect unmounted canvases and mark screen as dirty?
 
     local e = { os.pullEvent() }
     local name = e[1]

@@ -223,6 +223,30 @@ function PixelCanvas:markRect(x, y, width, height)
     end
 end
 
+---@param x integer
+---@param y integer
+---@param width integer
+---@param height integer
+function PixelCanvas:dirtyRect(x, y, width, height)
+    x, y = floor(x), floor(y)
+    -- TODO: remove bounds checking?
+
+    for cy = y, y + height - 1 do
+        if cy < 1 or cy > self.height then
+            -- out of bounds
+        else
+            self.dirty[cy] = self.dirty[cy] or {}
+            for cx = x, x + width - 1 do
+                if cx < 1 or cx > self.width then
+                    -- out of bounds
+                else
+                    self.dirty[cy][cx] = true
+                end
+            end
+        end
+    end
+end
+
 ---Mark the rectangle formed by the given canvas at {x, y} as dirty.
 ---@param canvas PixelCanvas
 ---@param x integer
@@ -387,90 +411,146 @@ end
 
 ---Composites the given pixel canvases onto the teletext's internal 
 ---pixel canvas and recomputes the teletext's character data.
----@param ... PixelCanvas | TextCanvas
+---@param ... { [1]: PixelCanvas, [2]: integer, [3]: integer }
 function TeletextCanvas:composite(...)
     local others = {...}
 
-    local queuedDirty = {}
+    -- Partition the screen based on canvas x/y/w/h
+    -- local t1 = os.epoch("utc")
+    local partitionSize = 20
+    local partitions = {}
+    for y = 1, self.height*3, partitionSize do
+        partitions[floor(y/partitionSize)+1] = {}
+        for x = 1, self.width*2, partitionSize do
+            partitions[floor(y/partitionSize)+1][floor(x/partitionSize)+1] = {}
+        end
+    end
+    -- local t2 = os.epoch("utc")
+    -- print("Partitioning took " .. (t2-t1) .. "ms")
+
+    -- t1 = os.epoch("utc")
     for _, other in ipairs(others) do
-        local isPixel = PixelCanvas.is(other)
-        for y, row in pairs(other.dirty) do
-            for x, _ in pairs(row) do
-                if isPixel then
-                    queuedDirty[y] = queuedDirty[y] or {}
-                    queuedDirty[y][x] = true
-                else
-                    -- TODO: ewwwwwwww
-                    queuedDirty[y*3] = queuedDirty[y*3] or {}
-                    queuedDirty[y*3][x*2] = true
-                    queuedDirty[y*3][x*2-1] = true
-                    queuedDirty[y*3-1] = queuedDirty[y*3-1] or {}
-                    queuedDirty[y*3-1][x*2] = true
-                    queuedDirty[y*3-1][x*2-1] = true
-                    queuedDirty[y*3-2] = queuedDirty[y*3-2] or {}
-                    queuedDirty[y*3-2][x*2] = true
-                    queuedDirty[y*3-2][x*2-1] = true
+        other[2] = floor(other[2])
+        other[3] = floor(other[3])
+        -- if PixelCanvas.is(other) then
+        local otherCanvas, otherX, otherY = other[1], other[2], other[3]
+
+        local originPartitionX = floor(otherX/partitionSize)*partitionSize+1
+        local originPartitionY = floor(otherY/partitionSize)*partitionSize+1
+
+        for y = originPartitionY, otherY+otherCanvas.height-1, partitionSize do
+            for x = originPartitionX, otherX+otherCanvas.width-1, partitionSize do
+                local px = floor(x/partitionSize)+1
+                local py = floor(y/partitionSize)+1
+                local partition = (partitions[py] or {})[px]
+                if partition then
+                    partition[#partition + 1] = other
                 end
             end
         end
-
-        other.dirty = {} -- TODO: is this necessary?
+        -- end
     end
+    -- t2 = os.epoch("utc")
+    -- print("Canvas partition assignment took " .. (t2-t1) .. "ms")
 
+    -- t1 = os.epoch("utc")
+    local queuedDirty = {}
+    local c = 0
+    for _, other in ipairs(others) do
+        -- local isPixel = PixelCanvas.is(other)
+        local ocanvas, ox, oy = other[1], other[2]-1, other[3]-1
+        for y, row in pairs(ocanvas.dirty) do
+            for x, _ in pairs(row) do
+                -- if isPixel then
+                local tx = x+ox
+                local ty = y+oy
+                if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                    queuedDirty[ty] = queuedDirty[ty] or {}
+                    queuedDirty[ty][tx] = true
+                    c = c + 1
+                end
+
+                -- else
+                --     -- TODO: ewwwwwwww
+                --     queuedDirty[y*3] = queuedDirty[y*3] or {}
+                --     queuedDirty[y*3][x*2] = true
+                --     queuedDirty[y*3][x*2-1] = true
+                --     queuedDirty[y*3-1] = queuedDirty[y*3-1] or {}
+                --     queuedDirty[y*3-1][x*2] = true
+                --     queuedDirty[y*3-1][x*2-1] = true
+                --     queuedDirty[y*3-2] = queuedDirty[y*3-2] or {}
+                --     queuedDirty[y*3-2][x*2] = true
+                --     queuedDirty[y*3-2][x*2-1] = true
+                -- end
+            end
+        end
+
+        ocanvas.dirty = {} -- TODO: is this necessary?
+    end
+    -- t2 = os.epoch("utc")
+
+    -- t1 = os.epoch("utc")
     for y, row in pairs(queuedDirty) do
         local targetY = ceil(y / 3)
         self.dirty[targetY] = self.dirty[targetY] or {}
+        -- print("row size: " .. #row)
         for x, _ in pairs(row) do
             local targetX = ceil(x / 2)
             local currPixel = self.pixelCanvas.canvas[y][x]
+            local partition = partitions[floor(y/partitionSize)+1][floor(x/partitionSize)+1]
 
             local found = false
-            local foundText = false
-            for i = #others, 1, -1 do
-                local other = others[i]
-                if PixelCanvas.is(other) then ---@cast other PixelCanvas
-                    local otherPixel = other.canvas[y][x]
-                    if otherPixel then
-                        found = true
+            -- local foundText = false
+            for i = #partition, 1, -1 do
+                local other = partition[i]
+                local otherCanvas, ox, oy = other[1], other[2], other[3]
+                -- if PixelCanvas.is(otherCanvas) then ---@cast other PixelCanvas
+                -- t1 = os.epoch("utc")
+                    if otherCanvas.canvas[y-oy+1] then
+                        local otherPixel = (otherCanvas.canvas[y-oy+1] or {})[x-ox+1]
+                        if otherPixel then
+                            found = true
 
-                        if otherPixel ~= currPixel then
-                            self.pixelCanvas.canvas[y][x] = otherPixel
-                            self.dirty[targetY][targetX] = true
+                            if otherPixel ~= currPixel then
+                                self.pixelCanvas.canvas[y][x] = otherPixel
+                                self.dirty[targetY][targetX] = true
+                            end
+
+                            break
                         end
-
-                        break
                     end
-                else ---@cast other TextCanvas
-                    local otherRow = other.canvas[targetY]
-                    local otherT = otherRow.t[targetX]
-                    local otherC = otherRow.c[targetX]
-                    local otherB = otherRow.b[targetX]
-                    if otherT then
-                        found = true
-                        foundText = true
+                -- t2 = os.epoch("utc")
+                -- else ---@cast other TextCanvas
+                --     local otherRow = other.canvas[targetY]
+                --     local otherT = otherRow.t[targetX]
+                --     local otherC = otherRow.c[targetX]
+                --     local otherB = otherRow.b[targetX]
+                --     if otherT then
+                --         found = true
+                --         foundText = true
 
-                        local currRow = self.canvas[targetY]
-                        local currT = currRow.t[targetX]
-                        local currC = currRow.c[targetX]
-                        local currB = currRow.b[targetX]
+                --         local currRow = self.canvas[targetY]
+                --         local currT = currRow.t[targetX]
+                --         local currC = currRow.c[targetX]
+                --         local currB = currRow.b[targetX]
 
-                        if otherT ~= currT or otherC ~= currC or otherB ~= currB then
-                            currRow.t[targetX] = otherT
-                            currRow.c[targetX] = otherC
-                            currRow.b[targetX] = otherB
-                            currRow.direct[targetX] = true
-                            self.dirty[targetY][targetX] = false -- Already processed
+                --         if otherT ~= currT or otherC ~= currC or otherB ~= currB then
+                --             currRow.t[targetX] = otherT
+                --             currRow.c[targetX] = otherC
+                --             currRow.b[targetX] = otherB
+                --             currRow.direct[targetX] = true
+                --             self.dirty[targetY][targetX] = false -- Already processed
 
-                            local dirtyRow = self.dirtyRows[targetY] or {}
-                            local minX, maxX = dirtyRow[1], dirtyRow[2]
-                            minX = minX and min(minX, targetX) or targetX
-                            maxX = maxX and max(maxX, targetX) or targetX
-                            self.dirtyRows[targetY] = { minX, maxX }
-                        end
+                --             local dirtyRow = self.dirtyRows[targetY] or {}
+                --             local minX, maxX = dirtyRow[1], dirtyRow[2]
+                --             minX = minX and min(minX, targetX) or targetX
+                --             maxX = maxX and max(maxX, targetX) or targetX
+                --             self.dirtyRows[targetY] = { minX, maxX }
+                --         end
 
-                        break
-                    end
-                end
+                --         break
+                --     end
+                -- end
             end
 
             if not found then
@@ -478,14 +558,16 @@ function TeletextCanvas:composite(...)
                 self.dirty[targetY][targetX] = true
             end
 
-            if not foundText then
-                if self.canvas[targetY].direct[targetX] then
-                    self.canvas[targetY].direct[targetX] = false
-                    self.dirty[targetY][targetX] = true
-                end
-            end
+            -- if not foundText then
+            --     if self.canvas[targetY].direct[targetX] then
+            --         self.canvas[targetY].direct[targetX] = false
+            --         self.dirty[targetY][targetX] = true
+            --     end
+            -- end
         end
     end
+    -- t2 = os.epoch("utc")
+    -- print("Canvas merging took " .. (t2-t1) .. "ms")
 
     -- Recalculate teletext canvas
     local clear = self.clear

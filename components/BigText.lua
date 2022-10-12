@@ -5,26 +5,25 @@ local useCanvas = hooks.useCanvas
 local bigFont = require("fonts.bigfont")
 
 return Solyd.wrapComponent("BigText", function(props)
-    local canvas = useCanvas()--Solyd.useContext("canvas")
+    local fw = props.width or bigFont:getWidth(props.text)+2
+    local canvas = useCanvas(fw, bigFont.height+3)--Solyd.useContext("canvas")
 
     Solyd.useEffect(function()
-        local fw = props.width or bigFont:getWidth(props.text)
-
         if props.bg then
-            for x = -1, fw do
-                for y = -1, bigFont.height do
-                    canvas:setPixel(props.x + x, props.y + y, props.bg)
+            for x = 1, fw do
+                for y = 1, bigFont.height+3 do
+                    canvas:setPixel(x, y, props.bg)
                 end
             end
         end
 
         local cx = props.width and math.floor((props.width - bigFont:getWidth(props.text)) / 2) or 0
-        bigFont:write(canvas, props.text, props.x + cx, props.y, props.color or colors.white)
+        bigFont:write(canvas, props.text, 2 + cx, 2, props.color or colors.white)
 
         return function()
-            canvas:markRect(props.x-1, props.y-1, fw+2, bigFont.height+2)
+            canvas:markRect(1, 1, fw, bigFont.height+3)
         end
-    end, { canvas, props.text, props.x, props.y, props.color, props.bg })
+    end, { canvas, props.text, props.color, props.bg, fw })
 
-    return nil, { canvas = canvas }
+    return nil, { canvas = { canvas, props.x, props.y } }
 end)
