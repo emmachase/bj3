@@ -14,7 +14,8 @@ local function getKey()
 end
 
 ---Helper definition for the lazy variant of useState, the type system isn't stronk enough otherwise
----@alias UseState<T> fun(initial: fun(): T): T, fun(newValue: T): T
+---@alias UseStateFn<T> fun(initial: fun(): T): T, fun(newValue: T): T
+---@alias UseState<T> fun(initial: T): T, fun(newValue: T): T
 
 ---Use State as a hook, sets the initial value if it is not set.
 ---@generic T
@@ -185,7 +186,7 @@ end
 local function copyDeep(t)
     local copy = {}
     for k, v in pairs(t) do
-        if type(v) == "table" and v.__opaque == nil then
+        if type(v) == "table" and v.__opaque == nil and v.__nocopy == nil then
             copy[k] = copyDeep(v)
         else
             copy[k] = v
@@ -204,7 +205,7 @@ end
 ---@param key any?
 ---@return SolydElement
 function Solyd.createElement(name, component, props, key)
-    return { __tag="element", name = name, component = component, props = copyDeep(props), key = key }
+    return { __tag="element", name = name, component = component, props = props, key = key }
 end
 
 local function propsChanged(oldProps, newProps)

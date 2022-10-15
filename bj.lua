@@ -12,6 +12,7 @@ local ChipStack = require("components.ChipStack")
 local PlayerSlot = require("components.PlayerSlot")
 local DealerModule = require("components.Dealer")
 local Dealer, getDealerContext = DealerModule.Dealer, DealerModule.getDealerContext
+local Core = require("core.GameState")
 --- End Imports
 
 local Main = Solyd.wrapComponent("Main", function(props)
@@ -21,7 +22,7 @@ local Main = Solyd.wrapComponent("Main", function(props)
     local dealerContext = getDealerContext(standCount)
 
     return _.flat {
-        BigText { text="Justy Blackjack", x=124, y=10, bg=colors.lime },
+        BigText { text="emmma Blackjack", x=124, y=10, bg=colors.lime },
 
         ChipStack {
             x = 10 + 10*0 + math.cos(props.t)*50+50,
@@ -69,7 +70,11 @@ local Main = Solyd.wrapComponent("Main", function(props)
                 end
             }
         end),
-    }, { canvas = {canvas, 1, 1}, dealerContext = dealerContext }
+    }, {
+        canvas = {canvas, 1, 1},
+        dealerContext = dealerContext,
+        gameState = props.gameState
+    }
 end)
 
 
@@ -79,6 +84,8 @@ os.startTimer(0)
 local t = 0
 local tree = nil
 local lastClock = os.epoch("utc")
+
+local gameState = Core.GameState.new()
 
 local lastCanvasStack = {}
 local weed
@@ -124,7 +131,7 @@ local function diffCanvasStack(newStack)
 end
 
 while true do
-    tree = Solyd.render(tree, Main {t = t})
+    tree = Solyd.render(tree, Main {t = t, gameState = gameState})
 
     local context = Solyd.getTopologicalContext(tree, { "canvas", "aabb" })
 
@@ -135,8 +142,6 @@ while true do
     display.ccCanvas:outputDirty(display.mon)
     local t2 = os.epoch("utc")
     print("Render time: " .. (t2-t1) .. "ms")
-
-    -- TODO: Collect unmounted canvases and mark screen as dirty?
 
     local e = { os.pullEvent() }
     local name = e[1]

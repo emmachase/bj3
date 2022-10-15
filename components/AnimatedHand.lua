@@ -12,6 +12,7 @@ return Solyd.wrapComponent("AnimatedHand", function(props)
 
     local afCards, setAfCards = Solyd.useState({})
 
+    -- TODO: make useAnimation take a finish function
     local t = useAnimation(#props.cards ~= #afCards)
     local finished = false
     if t and t > 1 then

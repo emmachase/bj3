@@ -12,6 +12,7 @@ local useAnimation, useBoundingBox = hooks.useAnimation, hooks.useBoundingBox
 
 local Sprite = require("components.Sprite")
 local BigText = require("components.BigText")
+local ChipStack = require("components.ChipStack")
 local Button = require("components.Button")
 local HandModule = require("components.Hand")
 local Hand, getDeckDims = HandModule.Hand, HandModule.getDeckDims
@@ -23,10 +24,17 @@ local playerSlotEmpty = loadRIF("res/cum.rif")
 return Solyd.wrapComponent("PlayerSlot", function(props)
     -- local filledCanvas = useCanvas()
     -- local canvas = useCanvas()
+    local gameState = Solyd.useContext("gameState") ---@type GameState
+    local playerId, setPlayerId = Solyd.useState--[[@as UseState<integer?>]](nil)
+    local player = gameState.players[playerId]
 
-    local isFilled, setFilled = Solyd.useState(false)
+    -- local isFilled, setFilled = Solyd.useState(false)
+    local isFilled = player ~= nil
 
-    local cards, setCards = Solyd.useState({})
+    -- local cards, setCards = Solyd.useState({})
+    local cards = player and player.hand or {}
+
+    local pendingBet, setPendingBet = Solyd.useState(0)
 
     local afCards, setAfCards = Solyd.useState({})
 
@@ -79,7 +87,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local dealerContext = Solyd.useContext("dealerContext")
     local stood, setStood = Solyd.useState(false)
 
-    -- I have no fucking clue whats happening here
+    -- I have a fucking clue to whats happening here
     local dmx = ((getDeckDims(#cards) - getDeckDims(#afCards))/2)*(#afCards > 0 and 1 or 0)
     local amx = -math.min(dmx, (t or 0)*2*dmx)
 
@@ -93,6 +101,156 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             else
                 valueText = tostring(softValue) .. "/" .. tostring(hardValue)
             end
+        end
+
+        if not player.bet then
+            -- local num1Chips   = math.floor(pendingBet/1)
+            -- local num5Chips   = math.floor((pendingBet - num1Chips)/5)
+            -- local num10Chips  = math.floor((pendingBet - num1Chips - num5Chips*5)/10)
+            -- local num25Chips  = math.floor((pendingBet - num1Chips - num5Chips*5 - num10Chips*10)/25)
+            -- local num100Chips = math.floor((pendingBet - num1Chips - num5Chips*5 - num10Chips*10 - num25Chips*25)/100)
+
+            local num100Chips = math.floor(pendingBet/100)
+            local num25Chips  = math.floor((pendingBet - num100Chips*100)/25)
+            local num10Chips  = math.floor((pendingBet - num100Chips*100 - num25Chips*25)/10)
+            local num5Chips   = math.floor((pendingBet - num100Chips*100 - num25Chips*25 - num10Chips*10)/5)
+            local num1Chips   = math.floor((pendingBet - num100Chips*100 - num25Chips*25 - num10Chips*10 - num5Chips*5)/1)
+
+            return {
+                Sprite { sprite = hitSprite, x = x, y = y },
+
+                BigText { 
+                    text = "\164" .. tostring(pendingBet),
+                    x = props.x + 2,
+                    y = y + 2,
+                    width = props.width - 4,
+                    color = colors.white
+                },
+
+                Button {
+                    x = x+2,
+                    y = y+props.height-14,
+                    width = props.width-4,
+                    text = "Bet",
+                    bg = canAct and colors.orange,
+                    color = colors.white,
+                    onClick = function()
+                        player.bet = 1 -- TODO
+                    end,
+                },
+
+                ChipStack {
+                    x = props.x + 8 + 10*0,
+                    y = y + props.height - 30,
+                    clear = colors.lime,
+                    chipCount = 1,
+                    chipValue = 1,
+                    onClick = function()
+                        setPendingBet(pendingBet + 1)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*2,
+                    y = y + props.height - 30,
+                    clear = colors.lime,
+                    chipCount = 1,
+                    chipValue = 5,
+                    onClick = function()
+                        setPendingBet(pendingBet + 5)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*4,
+                    y = y + props.height - 30,
+                    clear = colors.lime,
+                    chipCount = 1,
+                    chipValue = 10,
+                    onClick = function()
+                        setPendingBet(pendingBet + 10)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*6,
+                    y = y + props.height - 30,
+                    clear = colors.lime,
+                    chipCount = 1,
+                    chipValue = 25,
+                    onClick = function()
+                        setPendingBet(pendingBet + 25)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*8,
+                    y = y + props.height - 30,
+                    clear = colors.lime,
+                    chipCount = 1,
+                    chipValue = 100,
+                    onClick = function()
+                        setPendingBet(pendingBet + 100)
+                    end,
+                },
+
+                -- Actual bet
+
+                ChipStack {
+                    x = props.x + 8 + 10*0,
+                    y = y + props.height - 50,
+                    clear = colors.lime,
+                    chipCount = num1Chips,
+                    chipValue = 1,
+                    onClick = function()
+                        setPendingBet(pendingBet - 1)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*2,
+                    y = y + props.height - 50,
+                    clear = colors.lime,
+                    chipCount = num5Chips,
+                    chipValue = 5,
+                    onClick = function()
+                        setPendingBet(pendingBet - 5)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*4,
+                    y = y + props.height - 50,
+                    clear = colors.lime,
+                    chipCount = num10Chips,
+                    chipValue = 10,
+                    onClick = function()
+                        setPendingBet(pendingBet - 10)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*6,
+                    y = y + props.height - 50,
+                    clear = colors.lime,
+                    chipCount = num25Chips,
+                    chipValue = 25,
+                    onClick = function()
+                        setPendingBet(pendingBet - 25)
+                    end,
+                },
+        
+                ChipStack {
+                    x = props.x + 8 + 10*8,
+                    y = y + props.height - 50,
+                    clear = colors.lime,
+                    chipCount = num100Chips,
+                    chipValue = 100,
+                    onClick = function()
+                        setPendingBet(pendingBet - 100)
+                    end,
+                }
+            }
         end
 
         return {
@@ -131,7 +289,8 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             -- canvas = canvas,
             aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function()
                 if canAct and (not finished) then
-                    setCards(_.append(cards, table.remove(dealerContext.deck, 1)))
+                    -- setCards(_.append(cards, table.remove(dealerContext.deck, 1)))
+                    -- TODO
                 end
             end)
         }
@@ -145,8 +304,10 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
         }, {
             -- canvas = canvas,
             aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function()
-                setFilled(true)
-                setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
+                table.insert(gameState.players, { hand = {} })
+                setPlayerId(#gameState.players)
+                -- setFilled(true)
+                -- setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
             end)
         }
     end

@@ -2,7 +2,7 @@ local Solyd = require("modules.solyd")
 local loadRIF = require("modules.rif")
 
 local hooks = require("modules.hooks")
-local useCanvas = hooks.useCanvas
+local useCanvas, useBoundingBox = hooks.useCanvas, hooks.useBoundingBox
 
 local canvases = require("modules.canvas")
 local PixelCanvas = canvases.PixelCanvas
@@ -19,7 +19,7 @@ local chipColor = {
     [1] = colors.white,
     [5] = colors.red,
     [10] = colors.cyan,
-    [25] = colors.lime,
+    [25] = colors.green,
     [100] = colors.black,
 }
 
@@ -43,8 +43,12 @@ for value, color in pairs(chipColor) do
 end
 
 
----@param props { x: integer, y: integer, chipCount: integer, chipValue: integer }
+---@param props { x: integer, y: integer, chipCount: integer, chipValue: integer, clear: integer?, onClick: function? }
 return Solyd.wrapComponent("ChipStack", function(props)
+    if props.chipCount == 0 then
+        return
+    end
+
     local height = chipStackTop.height + (props.chipCount - 1) * chipStackMiddle.height + chipStackBottom.height
     local offsetY = height - chipStackTop.height - chipStackMiddle.height - chipStackBottom.height
 
@@ -53,7 +57,7 @@ return Solyd.wrapComponent("ChipStack", function(props)
     local sprite = Solyd.useMemo(function()
         local canv = PixelCanvas(chipStackTop.width + 2, height + 2)
 
-        canv:drawRect(colors.green, 1, 1, canv.width, canv.height)
+        canv:drawRect(props.clear or colors.green, 1, 1, canv.width, canv.height)
 
         canv:drawCanvas(chipStackTopColors[props.chipValue], 2, 2)
         for i = 1, props.chipCount - 1 do
@@ -62,10 +66,12 @@ return Solyd.wrapComponent("ChipStack", function(props)
         canv:drawCanvas(chipStackBottomColors[props.chipValue], 2, height - chipStackBottom.height + 2)
 
         return canv
-    end, { props.chipCount, props.chipValue })
+    end, { props.chipCount, props.chipValue, props.clear })
 
-
-    return nil, { canvas = {sprite, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3, chk = true} }
+    return nil, {
+        canvas = {sprite, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3, chk = true},
+        aabb = props.onClick and useBoundingBox(props.x, props.y - offsetY, chipStackTop.width, height, props.onClick)
+    }
     -- return Sprite {
     --     sprite = sprite,
     --     x = 1,

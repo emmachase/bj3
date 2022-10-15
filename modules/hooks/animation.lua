@@ -26,6 +26,7 @@ local function tickAnimations(dt)
     animationRequests = {}
     for _, v in ipairs(animationQueue) do
         local aT, setT = v[1], v[2]
+        print(aT + dt)
         setT(aT + dt)
     end
 end
