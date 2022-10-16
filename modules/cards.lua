@@ -5,6 +5,8 @@ local _ = require("util.score")
 ---@field rank "A" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K"
 ---@field hidden boolean?
 
+---@alias PlayerHand { bet: integer, [integer]: Card }
+
 local suits = { "spades", "hearts", "diamonds", "clubs" }
 local ranks = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
 local baseValue = {

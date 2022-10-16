@@ -196,7 +196,7 @@ local function copyDeep(t)
 end
 
 ---@alias ElementType "element"
----@alias SolydElement { __tag: ElementType, props: table, key: any?, component: fun(props: table, oldProps: table?): SolydElement | SolydElement[] }
+---@alias SolydElement { __tag: ElementType, props: table, propsDiff: table, key: any?, component: fun(props: table): SolydElement | SolydElement[] }
 
 ---Create a Solyd element from a comonent and props.
 ---@generic P: table
@@ -205,7 +205,7 @@ end
 ---@param key any?
 ---@return SolydElement
 function Solyd.createElement(name, component, props, key)
-    return { __tag="element", name = name, component = component, props = props, key = key }
+    return { __tag="element", name = name, component = component, props = props, propsDiff = copyDeep(props), key = key }
 end
 
 local function propsChanged(oldProps, newProps)
@@ -264,7 +264,7 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
 
     if forceRender
     or not previousTree
-    or propsChanged(previousTree.src.props, rootComponent.props)
+    or propsChanged(previousTree.src.propsDiff, rootComponent.propsDiff)
     -- or propsChanged(previousTree.hook.__volatile.parentContext, parentContext) 
     then
         -- upkeep
@@ -304,70 +304,70 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
                 end
             end
 
-            return { src = rootComponent, context = context, hook = hook }
-        end
-
-        -- TODO: verif ythat support swapping between singel and multiple children returned
-        if newTree.__tag == "element" and ((not previousTree) or previousTree.dom.src ~= nil) then
-            local oldChild = previousTree and previousTree.dom
-            if oldChild and oldChild.src.component == newTree.component then
-                nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(oldChild, newTree, hook) }
-            else
-                if oldChild then
-                    _unmount(previousTree) -- component changed, unmount old tree
-                end
-                nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(nil, newTree, hook) }
-            end
+            nextTree = { src = rootComponent, context = context, hook = hook }
         else
-            local oldChildren = previousTree and previousTree.dom ---@type table?
-            -- this supports the swapping behavior
-            if oldChildren and oldChildren.src ~= nil then
-                oldChildren = { oldChildren }
-            end
-            if newTree.__tag == "element" then
-                newTree = { newTree }
-            end
-
-            local children = {}
-
-            local previousUniqueComponents = previousTree and previousTree.keyed or {}
-
-            local nextUniqueComponents, nIndex = {}, 0
-            for i, child in ipairs(newTree) do
-                if type(child) == "table" and child.key then
-                    local prevMatch = previousUniqueComponents[child.key]
-                    if prevMatch and prevMatch.src and prevMatch.src.component ~= child.component then
-                        prevMatch = nil
-                    end
-
-                    local newChild = _render(prevMatch, child, hook)
-                    nextUniqueComponents[child.key] = newChild
-                    children[i] = newChild
-                elseif type(child) == "table" then
-                    nIndex = nIndex + 1
-                    local prevMatch = previousUniqueComponents[nIndex]
-                    if prevMatch and prevMatch.src and prevMatch.src.component ~= child.component then
-                        prevMatch = nil
-                    end
-
-                    local newChild = _render(prevMatch, child, hook)
-                    nextUniqueComponents[nIndex] = newChild
-                    children[i] = newChild
+            -- TODO: verif ythat support swapping between singel and multiple children returned
+            if newTree.__tag == "element" and ((not previousTree) or previousTree.dom.src ~= nil) then
+                local oldChild = previousTree and previousTree.dom
+                if oldChild and oldChild.src.component == newTree.component then
+                    nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(oldChild, newTree, hook) }
                 else
-                    -- should not mount
-                    nIndex = nIndex + 1
-                    children[i] = { src = nil }
+                    if oldChild then
+                        _unmount(previousTree) -- component changed, unmount old tree
+                    end
+                    nextTree = { src = rootComponent, hook = hook, context = context, dom = _render(nil, newTree, hook) }
                 end
-            end
-
-            -- Find any children that no longer exist in the new tree
-            for key, child in pairs(previousUniqueComponents) do
-                if child and not nextUniqueComponents[key] or nextUniqueComponents[key].src.component ~= child.src.component then
-                    _unmount(child)
+            else
+                local oldChildren = previousTree and previousTree.dom ---@type table?
+                -- this supports the swapping behavior
+                if oldChildren and oldChildren.src ~= nil then
+                    oldChildren = { oldChildren }
                 end
-            end
+                if newTree.__tag == "element" then
+                    newTree = { newTree }
+                end
 
-            nextTree = { src = rootComponent, hook = hook, context = context, dom = children, keyed = nextUniqueComponents }
+                local children = {}
+
+                local previousUniqueComponents = previousTree and previousTree.keyed or {}
+
+                local nextUniqueComponents, nIndex = {}, 0
+                for i, child in ipairs(newTree) do
+                    if type(child) == "table" and child.key then
+                        local prevMatch = previousUniqueComponents[child.key]
+                        if prevMatch and prevMatch.src and prevMatch.src.component ~= child.component then
+                            prevMatch = nil
+                        end
+
+                        local newChild = _render(prevMatch, child, hook)
+                        nextUniqueComponents[child.key] = newChild
+                        children[i] = newChild
+                    elseif type(child) == "table" then
+                        nIndex = nIndex + 1
+                        local prevMatch = previousUniqueComponents[nIndex]
+                        if prevMatch and prevMatch.src and prevMatch.src.component ~= child.component then
+                            prevMatch = nil
+                        end
+
+                        local newChild = _render(prevMatch, child, hook)
+                        nextUniqueComponents[nIndex] = newChild
+                        children[i] = newChild
+                    else
+                        -- should not mount
+                        nIndex = nIndex + 1
+                        children[i] = { src = nil }
+                    end
+                end
+
+                -- Find any children that no longer exist in the new tree
+                for key, child in pairs(previousUniqueComponents) do
+                    if child and not nextUniqueComponents[key] or nextUniqueComponents[key].src.component ~= child.src.component then
+                        _unmount(child)
+                    end
+                end
+
+                nextTree = { src = rootComponent, hook = hook, context = context, dom = children, keyed = nextUniqueComponents }
+            end
         end
 
         hook.__volatile.nextTree = nextTree

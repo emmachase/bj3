@@ -1,6 +1,7 @@
 local Solyd = require("modules.solyd")
 
 local animationRequests = {}
+local animationFinished = {}
 
 ---@return number?
 local function useAnimation(playing)
@@ -15,8 +16,11 @@ local function useAnimation(playing)
 
         return t
     elseif t ~= 0 then
+        print("reset")
         setT(0)
         return
+    else
+        -- print("ff", t)
     end
 end
 
@@ -26,7 +30,6 @@ local function tickAnimations(dt)
     animationRequests = {}
     for _, v in ipairs(animationQueue) do
         local aT, setT = v[1], v[2]
-        print(aT + dt)
         setT(aT + dt)
     end
 end
@@ -34,4 +37,5 @@ end
 return {
     useAnimation = useAnimation,
     tickAnimations = tickAnimations,
+    animationFinished = animationFinished,
 }

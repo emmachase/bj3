@@ -32,6 +32,11 @@ end
 
 ---@param props { x: number, y: number, cards: Card[], clear: integer? }
 local Hand = Solyd.wrapComponent("Hand", function(props)
+    if #props.cards == 0 then
+        return nil
+    end
+
+    -- print("new canva", getDeckDims(#props.cards))
     local canvas = useCanvas(getDeckDims(#props.cards))
 
     local sprite = Solyd.useMemo(function()
@@ -99,7 +104,7 @@ local Hand = Solyd.wrapComponent("Hand", function(props)
         canv:mapColors({ [colors.green] = (props.clear or colors.lime) })
 
         return canv
-    end, { props.cards })
+    end, { props.cards, props.clear })
 
     return nil, { canvas = { sprite, props.x, props.y } }
     -- return Sprite { sprite = sprite, x = 1, y = 1, remapFrom = colors.green, remapTo = props.clear or colors.lime }, {

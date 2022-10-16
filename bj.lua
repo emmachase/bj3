@@ -13,6 +13,7 @@ local PlayerSlot = require("components.PlayerSlot")
 local DealerModule = require("components.Dealer")
 local Dealer, getDealerContext = DealerModule.Dealer, DealerModule.getDealerContext
 local Core = require("core.GameState")
+local GameRunner = require("core.GameRunner")
 --- End Imports
 
 local Main = Solyd.wrapComponent("Main", function(props)
@@ -65,6 +66,7 @@ local Main = Solyd.wrapComponent("Main", function(props)
             return PlayerSlot {
                 x = 3 + (i-1)*(width+6),
                 width = width, height = 75,
+                playerId = i,
                 onStand = function()
                     setStandCount(standCount + 1)
                 end
@@ -84,8 +86,6 @@ os.startTimer(0)
 local t = 0
 local tree = nil
 local lastClock = os.epoch("utc")
-
-local gameState = Core.GameState.new()
 
 local lastCanvasStack = {}
 local weed
@@ -130,34 +130,38 @@ local function diffCanvasStack(newStack)
     lastCanvasStack = newStack
 end
 
-while true do
-    tree = Solyd.render(tree, Main {t = t, gameState = gameState})
+local gameState = Core.GameState.new()
 
-    local context = Solyd.getTopologicalContext(tree, { "canvas", "aabb" })
+GameRunner.launchGame(gameState, function()
+    while true do
+        tree = Solyd.render(tree, Main {t = t, gameState = gameState})
 
-    diffCanvasStack(context.canvas)
+        local context = Solyd.getTopologicalContext(tree, { "canvas", "aabb" })
 
-    local t1 = os.epoch("utc")
-    display.ccCanvas:composite({display.bgCanvas, 1, 1}, unpack(context.canvas))
-    display.ccCanvas:outputDirty(display.mon)
-    local t2 = os.epoch("utc")
-    print("Render time: " .. (t2-t1) .. "ms")
+        diffCanvasStack(context.canvas)
 
-    local e = { os.pullEvent() }
-    local name = e[1]
-    if name == "timer" then
-        local clock = os.epoch("utc")
-        local dt = (clock - lastClock)/1000
-        t = t + dt
-        lastClock = clock
-        os.startTimer(0)
+        local t1 = os.epoch("utc")
+        display.ccCanvas:composite({display.bgCanvas, 1, 1}, unpack(context.canvas))
+        display.ccCanvas:outputDirty(display.mon)
+        local t2 = os.epoch("utc")
+        -- print("Render time: " .. (t2-t1) .. "ms")
 
-        hooks.tickAnimations(dt)
-    elseif name == "monitor_touch" then
-        local x, y = e[3], e[4]
-        local node = hooks.findNodeAt(context.aabb, x, y)
-        if node then
-            node.onClick()
+        local e = { os.pullEvent() }
+        local name = e[1]
+        if name == "timer" then
+            local clock = os.epoch("utc")
+            local dt = (clock - lastClock)/1000
+            t = t + dt
+            lastClock = clock
+            os.startTimer(0)
+
+            hooks.tickAnimations(dt)
+        elseif name == "monitor_touch" then
+            local x, y = e[3], e[4]
+            local node = hooks.findNodeAt(context.aabb, x, y)
+            if node then
+                node.onClick()
+            end
         end
     end
-end
+end)

@@ -2,6 +2,7 @@ local _ = require("util.score")
 
 local Solyd = require("modules.solyd")
 local Cards = require("modules.cards")
+local Actions = require("core.Actions")
 local Display = require("modules.display")
 
 local Canvas = require("modules.canvas")
@@ -9,23 +10,30 @@ local PixelCanvas = Canvas.PixelCanvas
 
 local hooks = require("modules.hooks")
 local useAnimation, useBoundingBox = hooks.useAnimation, hooks.useBoundingBox
+local finishedAnimations = require("modules.hooks.animation").animationFinished
+local Iter = require("util.iter")
+local list = Iter.list
 
 local Sprite = require("components.Sprite")
 local BigText = require("components.BigText")
 local ChipStack = require("components.ChipStack")
 local Button = require("components.Button")
+local Flex = require("components.Flex")
 local HandModule = require("components.Hand")
 local Hand, getDeckDims = HandModule.Hand, HandModule.getDeckDims
 
 local loadRIF = require("modules.rif")
 local playerSlotEmpty = loadRIF("res/cum.rif")
 
----@param props { x: integer, width: integer, height: integer, onStand: fun() }
+local animDuration = 0.5
+
+---@param props { x: integer, width: integer, height: integer, playerId: integer, onStand: fun() }
 return Solyd.wrapComponent("PlayerSlot", function(props)
     -- local filledCanvas = useCanvas()
     -- local canvas = useCanvas()
     local gameState = Solyd.useContext("gameState") ---@type GameState
-    local playerId, setPlayerId = Solyd.useState--[[@as UseState<integer?>]](nil)
+    local playerId = props.playerId
+    -- local playerId, setPlayerId = Solyd.useState--[[@as UseState<integer?>]](nil)
     local player = gameState.players[playerId]
 
     -- local isFilled, setFilled = Solyd.useState(false)
@@ -67,9 +75,16 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local x, y = props.x, Display.ccCanvas.pixelCanvas.height-props.height-2
 
     local t = useAnimation(#cards ~= #afCards)
+    -- print(#cards, #afCards)
     local finished = false
-    if t and t > 1 then
-        afCards = setAfCards(cards)
+    if t and t > animDuration then
+        for card in list(_.intersectSeq(afCards, cards)) do
+            finishedAnimations[card.uid] = true
+        end
+
+        print("finishs", #cards, #afCards)
+        afCards = setAfCards({unpack(cards)})
+        print("finishs", #cards, #afCards)
         t = nil
         finished = true
     end
@@ -81,6 +96,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     -- ease t
     -- t = t and math.sqrt(t)
     -- t = t and -1 * t*(t-2); -- quad
+    t = t and t / animDuration
     t = t and t - 1
 	t = t and t*t*t + 1;
 
@@ -92,7 +108,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local amx = -math.min(dmx, (t or 0)*2*dmx)
 
     if isFilled then
-        local canAct = not didBust and not dealerContext.revealed and not stood
+        local canAct = player.requestInput and not didBust and not dealerContext.revealed and not stood
         
         local valueText
         if softValue > 0 then
@@ -132,7 +148,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     y = y+props.height-14,
                     width = props.width-4,
                     text = "Bet",
-                    bg = canAct and colors.orange,
+                    bg = colors.orange,
                     color = colors.white,
                     onClick = function()
                         player.bet = 1 -- TODO
@@ -149,7 +165,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                         setPendingBet(pendingBet + 1)
                     end,
                 },
-        
+
                 ChipStack {
                     x = props.x + 8 + 10*2,
                     y = y + props.height - 30,
@@ -160,7 +176,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                         setPendingBet(pendingBet + 5)
                     end,
                 },
-        
+
                 ChipStack {
                     x = props.x + 8 + 10*4,
                     y = y + props.height - 30,
@@ -272,6 +288,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     onClick = function()
                         setStood(true)
                         props.onStand()
+                        player.input = "stand"
                     end,
                 },
                 BigText {
@@ -281,6 +298,33 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     text = valueText or "",
                     color = colors.white,
                     bg = clearColor,
+                },
+                canAct and Flex {
+                    x = x+2,
+                    y = y+props.height-14,
+                    width = props.width-4,
+                    children = {
+                        Actions.canDoubleDown(player, player.hand) and Button {
+                            text = "Double Down",
+                            bg = colors.orange,
+                            color = colors.white,
+                            onClick = function()
+                                -- setStood(true)
+                                -- props.onDoubleDown()
+                                player.input = "double"
+                            end,
+                        },
+                        Actions.canSplit(player, player.hand) and Button {
+                            text = "Split",
+                            bg = colors.cyan,
+                            color = colors.white,
+                            onClick = function()
+                                -- setStood(true)
+                                -- props.onDoubleDown()
+                                player.input = "split"
+                            end,
+                        },
+                    }
                 }
             --     }
             -- }
@@ -291,6 +335,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                 if canAct and (not finished) then
                     -- setCards(_.append(cards, table.remove(dealerContext.deck, 1)))
                     -- TODO
+                    player.input = "hit"
                 end
             end)
         }
@@ -304,8 +349,9 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
         }, {
             -- canvas = canvas,
             aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function()
-                table.insert(gameState.players, { hand = {} })
-                setPlayerId(#gameState.players)
+                -- table.insert(gameState.players, { hand = {} })
+                -- setPlayerId(#gameState.players)
+                gameState.players[playerId] = { money = 1000, hand = {} }
                 -- setFilled(true)
                 -- setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
             end)
