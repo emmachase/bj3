@@ -4,6 +4,7 @@ local Solyd = require("modules.solyd")
 local Cards = require("modules.cards")
 local Actions = require("core.Actions")
 local Display = require("modules.display")
+local Wallet = require("modules.wallet")
 
 local Canvas = require("modules.canvas")
 local PixelCanvas = Canvas.PixelCanvas
@@ -119,6 +120,23 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             end
         end
 
+        local playerName = BigText {
+            text = player.entity.displayName,
+            x = x,
+            y = y - 12,
+            color = colors.white,
+            bg = colors.green,
+        }
+
+        local playerBalance = BigText {
+            text = "\164" .. tostring(Wallet.getWallet(player.entity.id).balance - pendingBet),
+            right = true,
+            x = x + props.width - 1,
+            y = y - 12,
+            color = colors.white,
+            bg = colors.green,
+        }
+
         if not player.bet then
             -- local num1Chips   = math.floor(pendingBet/1)
             -- local num5Chips   = math.floor((pendingBet - num1Chips)/5)
@@ -132,30 +150,39 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             local num5Chips   = math.floor((pendingBet - num100Chips*100 - num25Chips*25 - num10Chips*10)/5)
             local num1Chips   = math.floor((pendingBet - num100Chips*100 - num25Chips*25 - num10Chips*10 - num5Chips*5)/1)
 
+            local wallet = Wallet.getWallet(player.entity.id)
+            local balance = wallet.balance - pendingBet
+
             return {
                 Sprite { sprite = hitSprite, x = x, y = y },
 
+                playerName, playerBalance,
+
                 BigText { 
-                    text = "\164" .. tostring(pendingBet),
+                    text = "Bet: \164" .. tostring(pendingBet),
                     x = props.x + 2,
                     y = y + 2,
                     width = props.width - 4,
                     color = colors.white
                 },
 
-                Button {
+                pendingBet > 0 and Button {
                     x = x+2,
                     y = y+props.height-14,
                     width = props.width-4,
-                    text = "Bet",
+                    text = "Place Bet",
                     bg = colors.orange,
                     color = colors.white,
                     onClick = function()
-                        player.bet = 1 -- TODO
+                        local wallet = Wallet.getWallet(player.entity.id)
+                        wallet.balance = wallet.balance - pendingBet
+                        player.bet = pendingBet
+
+                        setPendingBet(0)
                     end,
                 },
 
-                ChipStack {
+                balance >= 1 and ChipStack {
                     x = props.x + 8 + 10*0,
                     y = y + props.height - 30,
                     clear = colors.lime,
@@ -166,7 +193,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     end,
                 },
 
-                ChipStack {
+                balance >= 5 and ChipStack {
                     x = props.x + 8 + 10*2,
                     y = y + props.height - 30,
                     clear = colors.lime,
@@ -177,7 +204,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     end,
                 },
 
-                ChipStack {
+                balance >= 10 and ChipStack {
                     x = props.x + 8 + 10*4,
                     y = y + props.height - 30,
                     clear = colors.lime,
@@ -188,7 +215,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     end,
                 },
         
-                ChipStack {
+                balance >= 25 and ChipStack {
                     x = props.x + 8 + 10*6,
                     y = y + props.height - 30,
                     clear = colors.lime,
@@ -199,7 +226,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     end,
                 },
         
-                ChipStack {
+                balance >= 100 and ChipStack {
                     x = props.x + 8 + 10*8,
                     y = y + props.height - 30,
                     clear = colors.lime,
@@ -274,6 +301,9 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             --     key = "filled",
             --     children = {
                 Sprite { sprite = hitSprite, x = x, y = y },
+
+                playerName, playerBalance,
+
                 Hand { x=x+(props.width - getDeckDims(#afCards))/2+amx -- x+1
                 , y=y+26, cards = afCards, clear = clearColor },
                 Hand { x=x+(props.width + getDeckDims(#afCards) - getDeckDims(#cards - #afCards) - dmx)/2 - (#afCards > 0 and 2 or 0)       --x+(props.width - getDeckDims(#cards))/2 -- x+1
@@ -305,7 +335,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     width = props.width-4,
                     children = {
                         Actions.canDoubleDown(player, player.hand) and Button {
-                            text = "Double Down",
+                            text = Actions.canSplit(player, player.hand) and "Double" or "Double Down",
                             bg = colors.orange,
                             color = colors.white,
                             onClick = function()
@@ -339,7 +369,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                 end
             end)
         }
-    else
+    elseif not gameState.running then
         return {
              
                 -- key = "waiting",
@@ -348,13 +378,37 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             
         }, {
             -- canvas = canvas,
-            aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function()
+            aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function(entity)
                 -- table.insert(gameState.players, { hand = {} })
                 -- setPlayerId(#gameState.players)
-                gameState.players[playerId] = { money = 1000, hand = {} }
+                gameState.players[playerId] = { entity = entity, money = 1000, hand = {} }
                 -- setFilled(true)
                 -- setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
             end)
         }
+    else
+        return {
+             
+            -- key = "waiting",
+            -- children = 
+            -- Sprite { sprite = emptySprite, x = x, y = y }
+            -- BigText { 
+            --     text = "Game is in session...", 
+            --     x = x, 
+            --     y = y + props.height / 2 - 6,
+            --     width = props.width,
+            --     color = colors.white, 
+            --     bg = colors.green
+            -- }
+        } --, {
+            -- canvas = canvas,
+            -- aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function(entity)
+            --     -- table.insert(gameState.players, { hand = {} })
+            --     -- setPlayerId(#gameState.players)
+            --     gameState.players[playerId] = { entity = entity, money = 1000, hand = {} }
+            --     -- setFilled(true)
+            --     -- setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
+            -- end)
+        -- }
     end
 end)

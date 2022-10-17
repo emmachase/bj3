@@ -23,12 +23,20 @@ local function launchGame(gameState, mainFunction)
     local gameFilter ---@type "animationFinished" | "waitForPlayerInput"
     local uidFilter
 
-    while true do
-        local e = { os.pullEvent() }
+    local eventFilter
+    local eventBacklog = {}
 
-        local status, result = coroutine.resume(mainCoroutine, unpack(e))
-        if not status then
-            error(result)
+    while true do
+        local e = (eventFilter == nil and #eventBacklog > 0) and table.remove(eventBacklog, 1) or { os.pullEvent() }
+
+        if eventFilter and e[1] ~= eventFilter then
+            eventBacklog[#eventBacklog+1] = e
+        else
+            local status, result = coroutine.resume(mainCoroutine, unpack(e))
+            eventFilter = result
+            if not status then
+                error(result)
+            end
         end
 
         if coroutine.status(mainCoroutine) == "dead" then
@@ -50,7 +58,7 @@ local function launchGame(gameState, mainFunction)
             end
 
             if not status then
-                error(result)
+                error(gameFilter)
             end
 
             if coroutine.status(gameCoroutine) == "dead" then

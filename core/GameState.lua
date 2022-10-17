@@ -1,5 +1,7 @@
 local Actions = require("core.Actions")
 local Cards = require("modules.cards")
+local Wallet = require("modules.wallet")
+
 local Iterators = require("util.iter")
 local list = Iterators.list
 
@@ -10,6 +12,7 @@ local list = Iterators.list
 ---@field deck Card[]
 ---@field dealer Dealer
 ---@field players Player[]
+---@field running boolean
 local GameState = {}
 local GameState_mt = { __index = GameState }
 
@@ -19,6 +22,7 @@ function GameState.new()
     self.deck = Cards.newDeck()
     self.dealer = {hand = {}}
     self.players = {}
+    self.running = false
 
     return self
 end
@@ -72,7 +76,8 @@ function GameState:processAction(player, hand, input)
     elseif input == "stand" then
         hand.didStand = true
     elseif input == "double" then
-        player.money = player.money - hand.bet
+        local wallet = Wallet.getWallet(player.entity.id)
+        wallet.balance = wallet.balance - hand.bet
         hand.bet = hand.bet * 2
         self:dealTo(hand)
         hand.didDoubleDown = true
@@ -83,9 +88,13 @@ end
 
 -- Anytime the game state is resumed, animation should be finished instantly. (call animation finish hooks)
 local function runGame(state)
+    state.running = false
     while not state:playersReady() do
         coroutine.yield()
     end
+
+    -- Game is starting
+    state.running = true
 
     -- Set bets
     for player in playerList(state.players) do

@@ -2,6 +2,8 @@
 local _ = require("util.score")
 
 local display = require("modules.display")
+local auth = require("modules.auth")
+auth.initialize(display.mon)
 
 local Solyd = require("modules.solyd")
 local hooks = require("modules.hooks")
@@ -158,9 +160,15 @@ GameRunner.launchGame(gameState, function()
             hooks.tickAnimations(dt)
         elseif name == "monitor_touch" then
             local x, y = e[3], e[4]
-            local node = hooks.findNodeAt(context.aabb, x, y)
-            if node then
-                node.onClick()
+            local player = auth.reconcileTouch(x, y)
+            if player then
+                local node = hooks.findNodeAt(context.aabb, x, y)
+                if node then
+                    require("pprint")(player)
+                    node.onClick(player)
+                end
+            else
+                -- TODO: Yell at the players
             end
         end
     end

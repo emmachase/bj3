@@ -25,5 +25,6 @@ return Solyd.wrapComponent("BigText", function(props)
         end
     end, { canvas, props.text, props.color, props.bg, fw })
 
-    return nil, { canvas = { canvas, props.x, props.y } }
+    local x = props.right and props.x-canvas.width+1 or props.x
+    return nil, { canvas = { canvas, x, props.y } }
 end)
