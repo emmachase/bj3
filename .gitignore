@@ -1,0 +1,7 @@
+.*
+!.gitignore
+calibration
+*mbs*
+flags
+*-old.lua
+pprint.lua
