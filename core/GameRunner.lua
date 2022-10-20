@@ -48,6 +48,8 @@ local function launchGame(gameState, mainFunction)
             canResume = areAnimationsFinished(uidFilter)
         elseif gameFilter == "waitForPlayerInput" then
             canResume = isPlayerInputReady()
+        elseif gameFilter == "timer" then
+            canResume = e[1] == "timer" and e[2] == uidFilter
         end
 
         if canResume then

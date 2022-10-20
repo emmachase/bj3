@@ -5,7 +5,7 @@ local Wallet = require("modules.wallet")
 local Iterators = require("util.iter")
 local list = Iterators.list
 
----@alias Player { hand: PlayerHand, bet: integer?, money: integer }
+---@alias Player { hand: PlayerHand, bet: integer? }
 ---@alias Dealer { hand: PlayerHand }
 
 ---@class GameState
@@ -25,6 +25,17 @@ function GameState.new()
     self.running = false
 
     return self
+end
+
+function GameState:resetGame()
+    self.dealer = {hand = {}}
+    for i = 1, 3 do
+        if self.players[i] then
+            self.players[i].hand = {}
+            self.players[i].bet = nil
+        end
+    end
+    self.running = false
 end
 
 local function waitForAnimation(uid)
@@ -137,6 +148,15 @@ local function runGame(state)
         print("Waiting for dealer")
         state:dealTo(state.dealer.hand)
     end
+
+    local displayTimer = os.startTimer(1)
+    coroutine.yield("timer", displayTimer)
+
+    state:resetGame()
+
+    print("did reset")
+
+    return runGame(state) -- Tail call optimization go brr
 end
 
 return {

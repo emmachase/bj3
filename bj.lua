@@ -21,11 +21,8 @@ local GameRunner = require("core.GameRunner")
 local Main = Solyd.wrapComponent("Main", function(props)
     local canvas = useCanvas()
 
-    local standCount, setStandCount = Solyd.useState(0)
-    local dealerContext = getDealerContext(standCount)
-
     return _.flat {
-        BigText { text="emmma Blackjack", x=124, y=10, bg=colors.lime },
+        BigText { text="Lyqyd Blackjack", x=124, y=10, bg=colors.lime },
 
         ChipStack {
             x = 10 + 10*0 + math.cos(props.t)*50+50,
@@ -69,21 +66,18 @@ local Main = Solyd.wrapComponent("Main", function(props)
                 x = 3 + (i-1)*(width+6),
                 width = width, height = 75,
                 playerId = i,
-                onStand = function()
-                    setStandCount(standCount + 1)
-                end
+                -- onStand = function()
+                --     setStandCount(standCount + 1)
+                -- end
             }
         end),
     }, {
         canvas = {canvas, 1, 1},
-        dealerContext = dealerContext,
-        gameState = props.gameState
+        gameState = props.gameState or {}
     }
 end)
 
 
-
-os.startTimer(0)
 
 local t = 0
 local tree = nil
@@ -134,6 +128,7 @@ end
 
 local gameState = Core.GameState.new()
 
+local deltaTimer = os.startTimer(0)
 GameRunner.launchGame(gameState, function()
     while true do
         tree = Solyd.render(tree, Main {t = t, gameState = gameState})
@@ -150,12 +145,12 @@ GameRunner.launchGame(gameState, function()
 
         local e = { os.pullEvent() }
         local name = e[1]
-        if name == "timer" then
+        if name == "timer" and e[2] == deltaTimer then
             local clock = os.epoch("utc")
             local dt = (clock - lastClock)/1000
             t = t + dt
             lastClock = clock
-            os.startTimer(0)
+            deltaTimer = os.startTimer(0)
 
             hooks.tickAnimations(dt)
         elseif name == "monitor_touch" then

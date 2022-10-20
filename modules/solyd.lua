@@ -17,6 +17,8 @@ end
 ---@alias UseStateFn<T> fun(initial: fun(): T): T, fun(newValue: T): T
 ---@alias UseState<T> fun(initial: T): T, fun(newValue: T): T
 
+local setChange = false
+
 ---Use State as a hook, sets the initial value if it is not set.
 ---@generic T
 ---@param initial T
@@ -35,6 +37,8 @@ function Solyd.useState(initial)
     local function setState(newState)
         state.value = newState
         state.dirty = true
+        setChange = true
+        print(debug.traceback())
         return newState
     end
 
@@ -126,7 +130,15 @@ function Solyd.useContext(key)
     while parentHookCtx do
         if parentHookCtx.context and parentHookCtx.context[key] then
             parentHookCtx.contextConsumers[key] = parentHookCtx.contextConsumers[key] or {}
+            for i = 1, #parentHookCtx.contextConsumers[key] do
+                if parentHookCtx.contextConsumers[key][i] == __hook then
+                    return parentHookCtx.context[key]
+                end
+            end
+
             table.insert(parentHookCtx.contextConsumers[key], __hook)
+            __hook.contextSubscriptions = __hook.contextSubscriptions or {}
+            __hook.contextSubscriptions[key] = parentHookCtx.contextConsumers
             return parentHookCtx.context[key]
         end
 
@@ -184,6 +196,10 @@ end
 ---@param t T
 ---@return T
 local function copyDeep(t)
+    if type(t) ~= "table" then
+        return t
+    end
+
     local copy = {}
     for k, v in pairs(t) do
         if type(v) == "table" and v.__opaque == nil and v.__nocopy == nil then
@@ -217,7 +233,9 @@ local function propsChanged(oldProps, newProps)
         return true
     end
 
+    local keySet = {}
     for k, v in pairs(newProps) do
+        keySet[k] = true
         if type(v) == "table" and v.__opaque == nil then
             if propsChanged(oldProps[k], v) then
                 return true
@@ -227,8 +245,26 @@ local function propsChanged(oldProps, newProps)
         end
     end
 
+    for k, v in pairs(oldProps) do
+        if not keySet[k] then
+            return true
+        end
+    end
+
     return false
 end
+
+-- local function tableSize(t)
+--     if type(t) ~= "table" then
+--         return nil
+--     end
+    
+--     local count = 0
+--     for k, v in pairs(t) do
+--         count = count + 1
+--     end
+--     return count
+-- end
 
 ---Call any unmount functions bottom-up to ensure everything is cleaned up.
 local function _unmount(node)
@@ -246,6 +282,17 @@ local function _unmount(node)
         for k, v in pairs(node.hook) do
             if type(v) == "table" and v.unmount then
                 v.unmount()
+            end
+        end
+
+        if node.hook.contextSubscriptions then
+            for key, consumers in pairs(node.hook.contextSubscriptions) do
+                for i = 1, #consumers do
+                    if consumers[i] == node.hook then
+                        table.remove(consumers, i)
+                        break
+                    end
+                end
             end
         end
     end
@@ -268,7 +315,7 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
     -- or propsChanged(previousTree.hook.__volatile.parentContext, parentContext) 
     then
         -- upkeep
-        local hook = previousTree and previousTree.hook or {}
+        local hook = previousTree and previousTree.hook or { contextConsumers = {} }
         hook.__volatile = {
             __opaque = true,
             previousTree = previousTree,
@@ -281,16 +328,32 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
         -- update
         local newTree, context = rootComponent.component(rootComponent.props)
 
-        if propsChanged(hook.context, context) then
+        if context and context.gameState then
+            -- print(hook.contextDiff, context.gameState, propsChanged(hook.contextDiff, context))
+        end
+
+        -- TODO: Optimize only call context consumers for the context that changed
+        if propsChanged(hook.contextDiff, context) then
+            if context and context.gameState then
+                print("a")
+            end
             for k, v in pairs(hook.contextConsumers or {}) do
+                if context and context.gameState then
+                    print(k, "b")
+                end
                 for i = 1, #v do
                     v[i].contextDirty = { dirty = true }
+                    if context and context.gameState then
+                        print("setfucke")
+                    end
                 end
             end
+
+            hook.contextDiff = copyDeep(context)
         end
 
         hook.context = context
-        hook.contextConsumers = {}
+        -- hook.contextConsumers = {}
 
         if not newTree then
             -- Check if we need to unmount children
@@ -392,7 +455,7 @@ local function _cleanDirty(tree)
             for k, v in pairs(node.hook) do
                 if type(v) == "table" and v.dirty then
                     dirty = true
-                    -- v.dirty = false TODO: is this needed?
+                    v.dirty = false
                 end
             end
 
@@ -465,7 +528,10 @@ end
 ---@return table?
 function Solyd.render(previousTree, rootComponent)
     local tree = _render(previousTree, rootComponent)
-    tree = _cleanDirty(tree)
+    repeat
+        setChange = false
+        tree = _cleanDirty(tree)
+    until not setChange
 
     return tree
 end

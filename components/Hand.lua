@@ -106,7 +106,7 @@ local Hand = Solyd.wrapComponent("Hand", function(props)
         return canv
     end, { props.cards, props.clear })
 
-    return nil, { canvas = { sprite, props.x, props.y } }
+    return nil, { canvas = { sprite, props.x, props.y, lol=true } }
     -- return Sprite { sprite = sprite, x = 1, y = 1, remapFrom = colors.green, remapTo = props.clear or colors.lime }, {
     --     canvas = {canvas, props.x, props.y},
     -- }

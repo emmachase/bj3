@@ -28,7 +28,7 @@ local playerSlotEmpty = loadRIF("res/cum.rif")
 
 local animDuration = 0.5
 
----@param props { x: integer, width: integer, height: integer, playerId: integer, onStand: fun() }
+---@param props { x: integer, width: integer, height: integer, playerId: integer }
 return Solyd.wrapComponent("PlayerSlot", function(props)
     -- local filledCanvas = useCanvas()
     -- local canvas = useCanvas()
@@ -73,6 +73,10 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
         return canv
     end, { clearColor, props.width, props.height })
 
+    if clearColor == colors.red then
+        print(#afCards)
+    end
+
     local x, y = props.x, Display.ccCanvas.pixelCanvas.height-props.height-2
 
     local t = useAnimation(#cards ~= #afCards)
@@ -88,6 +92,8 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
         print("finishs", #cards, #afCards)
         t = nil
         finished = true
+    elseif #cards ~= #afCards and not gameState.running then
+        afCards = setAfCards({})
     end
     -- local h = 
     -- if isFilled then
@@ -101,18 +107,20 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     t = t and t - 1
 	t = t and t*t*t + 1;
 
-    local dealerContext = Solyd.useContext("dealerContext")
-    local stood, setStood = Solyd.useState(false)
+    -- local stood, setStood = Solyd.useState(false)
 
     -- I have a fucking clue to whats happening here
     local dmx = ((getDeckDims(#cards) - getDeckDims(#afCards))/2)*(#afCards > 0 and 1 or 0)
     local amx = -math.min(dmx, (t or 0)*2*dmx)
 
     if isFilled then
-        local canAct = player.requestInput and not didBust and not dealerContext.revealed and not stood
+        local dealerRevealed = gameState.dealer.hand[2] and not gameState.dealer.hand[2].hidden
+        local canAct = player.requestInput and not didBust and not dealerRevealed and not (player.input == "stood")
         
         local valueText
-        if softValue > 0 then
+        if hardValue == 21 and #afCards == 2 then
+            valueText = "Blackjack!"
+        elseif softValue > 0 then
             if softValue == hardValue then
                 valueText = tostring(softValue)
             else
@@ -174,11 +182,23 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     bg = colors.orange,
                     color = colors.white,
                     onClick = function()
-                        local wallet = Wallet.getWallet(player.entity.id)
                         wallet.balance = wallet.balance - pendingBet
                         player.bet = pendingBet
 
                         setPendingBet(0)
+                    end,
+                },
+
+                pendingBet == 0 and Button {
+                    x = x+2,
+                    y = y+props.height-14,
+                    width = props.width-4,
+                    text = "Leave",
+                    bg = colors.red,
+                    color = colors.white,
+                    onClick = function()
+                        print("ioopoop")
+                        gameState.players[playerId] = nil
                     end,
                 },
 
@@ -316,8 +336,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     bg = canAct and colors.red,
                     color = colors.white,
                     onClick = function()
-                        setStood(true)
-                        props.onStand()
+                        -- setStood(true)
                         player.input = "stand"
                     end,
                 },
@@ -381,7 +400,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function(entity)
                 -- table.insert(gameState.players, { hand = {} })
                 -- setPlayerId(#gameState.players)
-                gameState.players[playerId] = { entity = entity, money = 1000, hand = {} }
+                gameState.players[playerId] = { entity = entity, hand = {} }
                 -- setFilled(true)
                 -- setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
             end)

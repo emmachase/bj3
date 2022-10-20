@@ -22,15 +22,12 @@ local function getDealerContext(standCount)
 end
 
 local Dealer = Solyd.wrapComponent("Dealer", function(props)
+    -- local cards = Solyd.useRef(function()
+    --     local hidden = table.remove(dealerContext.deck, 1)
+    --     hidden.hidden = true
 
-    local dealerContext = Solyd.useContext("dealerContext")
-
-    local cards = Solyd.useRef(function()
-        local hidden = table.remove(dealerContext.deck, 1)
-        hidden.hidden = true
-
-        return { table.remove(dealerContext.deck, 1), hidden }
-    end)
+    --     return { table.remove(dealerContext.deck, 1), hidden }
+    -- end)
 
     -- if dealerContext.revealed then
     --     cards.value[2].hidden = false
@@ -38,14 +35,14 @@ local Dealer = Solyd.wrapComponent("Dealer", function(props)
 
     local gameState = Solyd.useContext("gameState") ---@type GameState
 
-    local numCards, setNumCards = Solyd.useState(0)
-    local anim = Animation.useAnimation(numCards < #gameState.dealer.hand)
-    if anim and anim > 0.25 then
-        setNumCards(numCards)
-        for i = 1, #gameState.dealer.hand do
-            Animation.animationFinished[gameState.dealer.hand[i].uid] = true
-        end
+    -- local numCards, setNumCards = Solyd.useState(0)
+    -- local anim = Animation.useAnimation(numCards ~= #gameState.dealer.hand)
+    -- if anim and anim > 0.25 and numCards ~= #gameState.dealer.hand then
+    --     setNumCards(#gameState.dealer.hand)
+    for i = 1, #gameState.dealer.hand do
+        Animation.animationFinished[gameState.dealer.hand[i].uid] = true
     end
+    -- end
     -- print("rerender", #gameState.dealer.hand)
 
     -- if #gameState.dealer.hand == 0 then
@@ -56,6 +53,7 @@ local Dealer = Solyd.wrapComponent("Dealer", function(props)
     -- else
     -- if #gameState.dealer.hand > 0 then
     -- print("isopqaue", gameState.dealer.hand)
+    -- print("rerender")
         return Hand { x=150, y=100, cards = {unpack(gameState.dealer.hand)} }
         
     -- end
