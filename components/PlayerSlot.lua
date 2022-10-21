@@ -23,10 +23,27 @@ local Flex = require("components.Flex")
 local HandModule = require("components.Hand")
 local Hand, getDeckDims = HandModule.Hand, HandModule.getDeckDims
 
+local AnimatedPlayerHands = require("components.AnimatedPlayerHands")
+
 local loadRIF = require("modules.rif")
 local playerSlotEmpty = loadRIF("res/cum.rif")
 
 local animDuration = 0.5
+
+---@param player Player
+local function SplitAnimation(player)
+    local hand = player.hands[player.activeHand]
+    player.hands[player.activeHand] = { hand[1] }
+    player.hands[#player.hands + 1] = { hand[2] }
+
+    return {
+        { player.hands[player.activeHand], "xOffset", to = 50, duration = 1 }
+    }
+end
+
+
+
+
 
 ---@param props { x: integer, width: integer, height: integer, playerId: integer }
 return Solyd.wrapComponent("PlayerSlot", function(props)
@@ -41,7 +58,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local isFilled = player ~= nil
 
     -- local cards, setCards = Solyd.useState({})
-    local cards = player and player.hand or {}
+    local cards = player and player.hands[player.activeHand] or {}
 
     local pendingBet, setPendingBet = Solyd.useState(0)
 
@@ -175,6 +192,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                 },
 
                 pendingBet > 0 and Button {
+                    key = "placeBetButton",
                     x = x+2,
                     y = y+props.height-14,
                     width = props.width-4,
@@ -324,11 +342,22 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
 
                 playerName, playerBalance,
 
-                Hand { x=x+(props.width - getDeckDims(#afCards))/2+amx -- x+1
-                , y=y+26, cards = afCards, clear = clearColor },
-                Hand { x=x+(props.width + getDeckDims(#afCards) - getDeckDims(#cards - #afCards) - dmx)/2 - (#afCards > 0 and 2 or 0)       --x+(props.width - getDeckDims(#cards))/2 -- x+1
-                , y=y+26+math.max(0, props.height-props.height*(t or 1)), cards = _.intersectSeq(afCards, cards), clear = clearColor },
+                AnimatedPlayerHands {
+                    hands = player.hands,
+                    activeHand = player.activeHand,
+                    x = x,
+                    y = y,
+                    width = props.width,
+                    height = props.height,
+                    clear = clearColor,
+                },
+
+                -- Hand { x=x+(props.width - getDeckDims(#afCards))/2+amx -- x+1
+                -- , y=y+26, cards = afCards, clear = clearColor },
+                -- Hand { x=x+(props.width + getDeckDims(#afCards) - getDeckDims(#cards - #afCards) - dmx)/2 - (#afCards > 0 and 2 or 0)       --x+(props.width - getDeckDims(#cards))/2 -- x+1
+                -- , y=y+26+math.max(0, props.height-props.height*(t or 1)), cards = _.intersectSeq(afCards, cards), clear = clearColor },
                 Button {
+                    key = "standButton",
                     x = x+2,
                     y = y+2,
                     width = props.width-4,
@@ -353,8 +382,8 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     y = y+props.height-14,
                     width = props.width-4,
                     children = {
-                        Actions.canDoubleDown(player, player.hand) and Button {
-                            text = Actions.canSplit(player, player.hand) and "Double" or "Double Down",
+                        Actions.canDoubleDown(player, player.hands[player.activeHand]) and Button {
+                            text = Actions.canSplit(player, player.hands[player.activeHand]) and "Double" or "Double Down",
                             bg = colors.orange,
                             color = colors.white,
                             onClick = function()
@@ -363,7 +392,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                                 player.input = "double"
                             end,
                         },
-                        Actions.canSplit(player, player.hand) and Button {
+                        Actions.canSplit(player, player.hands[player.activeHand]) and Button {
                             text = "Split",
                             bg = colors.cyan,
                             color = colors.white,
@@ -400,7 +429,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             aabb = useBoundingBox(x, y, emptySprite.width, emptySprite.height, function(entity)
                 -- table.insert(gameState.players, { hand = {} })
                 -- setPlayerId(#gameState.players)
-                gameState.players[playerId] = { entity = entity, hand = {} }
+                gameState.players[playerId] = { entity = entity, hands = { {} }, activeHand = 1 }
                 -- setFilled(true)
                 -- setCards({ table.remove(dealerContext.deck, 1), table.remove(dealerContext.deck, 1) })
             end)

@@ -108,4 +108,24 @@ function score.append(list, value)
     return list
 end
 
+---Deeply copies a table, except for tables that have a __opaque property.
+---@generic T: table
+---@param t T
+---@return T
+function score.copyDeep(t)
+    if type(t) ~= "table" then
+        return t
+    end
+
+    local copy = {}
+    for k, v in pairs(t) do
+        if type(v) == "table" and v.__opaque == nil and v.__nocopy == nil then
+            copy[k] = score.copyDeep(v)
+        else
+            copy[k] = v
+        end
+    end
+    return copy
+end
+
 return score

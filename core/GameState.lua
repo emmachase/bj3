@@ -5,7 +5,7 @@ local Wallet = require("modules.wallet")
 local Iterators = require("util.iter")
 local list = Iterators.list
 
----@alias Player { hand: PlayerHand, bet: integer? }
+---@alias Player { hands: PlayerHand[], activeHand: integer, bet: integer? }
 ---@alias Dealer { hand: PlayerHand }
 
 ---@class GameState
@@ -31,8 +31,9 @@ function GameState:resetGame()
     self.dealer = {hand = {}}
     for i = 1, 3 do
         if self.players[i] then
-            self.players[i].hand = {}
+            self.players[i].hands = { {} }
             self.players[i].bet = nil
+            self.players[i].activeHand = 1
         end
     end
     self.running = false
@@ -42,6 +43,9 @@ local function waitForAnimation(uid)
     coroutine.yield("animationFinished", uid)
 end
 
+---@generic T
+---@param xs T[]
+---@return fun(): T
 local function playerList(xs)
     local i = 4
     return function()
@@ -98,6 +102,7 @@ function GameState:processAction(player, hand, input)
 end
 
 -- Anytime the game state is resumed, animation should be finished instantly. (call animation finish hooks)
+---@param state GameState
 local function runGame(state)
     state.running = false
     while not state:playersReady() do
@@ -109,31 +114,39 @@ local function runGame(state)
 
     -- Set bets
     for player in playerList(state.players) do
-        player.hand.bet = player.bet
+        player.hands[1].bet = player.bet
     end
 
     for i = 1, 2 do
         for player in playerList(state.players) do
             print("Dealing to player")
-            state:dealTo(player.hand)
+            state:dealTo(player.hands[1])
         end
         print("Dealing to dealer")
         state:dealTo(state.dealer.hand, --[[hidden:]] i == 2)
     end
 
     for player in playerList(state.players) do
-        while Actions.canHit(player, player.hand) do
-            print("Waiting for player")
-            player.requestInput = true
+        while true do
+            while Actions.canHit(player, player.hands[player.activeHand]) do
+                print("Waiting for player")
+                player.requestInput = true
 
-            while player.input == nil do
-                coroutine.yield()
+                while player.input == nil do
+                    coroutine.yield()
+                end
+
+                player.requestInput = false
+
+                state:processAction(player, player.hands[player.activeHand], player.input)
+                player.input = nil
             end
 
-            player.requestInput = false
-
-            state:processAction(player, player.hand, player.input)
-            player.input = nil
+            if player.activeHand == #player.hands then
+                break
+            else
+                player.activeHand = player.activeHand + 1
+            end
         end
 
         -- player.

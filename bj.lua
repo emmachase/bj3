@@ -159,7 +159,6 @@ GameRunner.launchGame(gameState, function()
             if player then
                 local node = hooks.findNodeAt(context.aabb, x, y)
                 if node then
-                    require("pprint")(player)
                     node.onClick(player)
                 end
             else

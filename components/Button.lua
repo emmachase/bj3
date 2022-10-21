@@ -18,6 +18,6 @@ return Solyd.wrapComponent("Button", function(props)
         width = props.width,
     }, {
         -- canvas = canvas,
-        aabb = useBoundingBox(props.x, props.y, props.width or bigFont:getWidth(props.text), bigFont.height, props.onClick),
+        aabb = useBoundingBox(props.x, props.y, props.width or bigFont:getWidth(props.text), bigFont.height+3, props.onClick),
     }
 end)

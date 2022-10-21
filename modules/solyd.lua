@@ -1,3 +1,5 @@
+local _ = require("util.score")
+
 local Solyd = {} -- like lyqyd but not
 
 local __hook
@@ -38,7 +40,6 @@ function Solyd.useState(initial)
         state.value = newState
         state.dirty = true
         setChange = true
-        print(debug.traceback())
         return newState
     end
 
@@ -91,6 +92,10 @@ function Solyd.useMemo(fun, deps)
     end
 
     return memo.value
+end
+
+function Solyd.useCallback(fun, deps)
+    return Solyd.useMemo(function() return fun end, deps)
 end
 
 ---Accepts a function that contains imperative, possibly effectful code.
@@ -191,26 +196,6 @@ function Solyd.getTopologicalContext(tree, keys)
     return values
 end
 
----Deeply copies a table, except for tables that have a __opaque property.
----@generic T: table
----@param t T
----@return T
-local function copyDeep(t)
-    if type(t) ~= "table" then
-        return t
-    end
-
-    local copy = {}
-    for k, v in pairs(t) do
-        if type(v) == "table" and v.__opaque == nil and v.__nocopy == nil then
-            copy[k] = copyDeep(v)
-        else
-            copy[k] = v
-        end
-    end
-    return copy
-end
-
 ---@alias ElementType "element"
 ---@alias SolydElement { __tag: ElementType, props: table, propsDiff: table, key: any?, component: fun(props: table): SolydElement | SolydElement[] }
 
@@ -221,7 +206,7 @@ end
 ---@param key any?
 ---@return SolydElement
 function Solyd.createElement(name, component, props, key)
-    return { __tag="element", name = name, component = component, props = props, propsDiff = copyDeep(props), key = key }
+    return { __tag="element", name = name, component = component, props = props, propsDiff = _.copyDeep(props), key = key }
 end
 
 local function propsChanged(oldProps, newProps)
@@ -334,22 +319,13 @@ local function _render(previousTree, rootComponent, parentContext, forceRender)
 
         -- TODO: Optimize only call context consumers for the context that changed
         if propsChanged(hook.contextDiff, context) then
-            if context and context.gameState then
-                print("a")
-            end
             for k, v in pairs(hook.contextConsumers or {}) do
-                if context and context.gameState then
-                    print(k, "b")
-                end
                 for i = 1, #v do
                     v[i].contextDirty = { dirty = true }
-                    if context and context.gameState then
-                        print("setfucke")
-                    end
                 end
             end
 
-            hook.contextDiff = copyDeep(context)
+            hook.contextDiff = _.copyDeep(context)
         end
 
         hook.context = context
