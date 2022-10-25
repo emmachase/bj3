@@ -38,6 +38,7 @@ end
 ---@field height integer
 ---@field canvas { [integer]: { [integer]: integer } }
 ---@field dirty { [integer]: { [integer]: boolean } }
+---@field allDirty boolean?
 ---@operator call:PixelCanvas
 local PixelCanvas = {}
 local PixelCanvas_mt = { __index = PixelCanvas }
@@ -81,8 +82,10 @@ end
 function PixelCanvas:clone()
     local clone = PixelCanvas.new(self.width, self.height)
     for y = 1, self.height do
+        clone.dirty[y] = {}
         for x = 1, self.width do
             clone.canvas[y][x] = self.canvas[y][x]
+            clone.dirty[y][x] = true
         end
     end
 
@@ -287,6 +290,13 @@ function PixelCanvas.is(obj)
     return getmetatable(obj) == PixelCanvas_mt
 end
 
+---@param others { [1]: PixelCanvas, [2]: integer, [3]: integer }[]
+function PixelCanvas:composite(others)
+    for _, other in ipairs(others) do
+        self:drawCanvas(other[1], other[2], other[3])
+    end
+end
+
 ---@class TextCanvas
 ---@field width number
 ---@field height number
@@ -459,29 +469,43 @@ function TeletextCanvas:composite(...)
     for _, other in ipairs(others) do
         -- local isPixel = PixelCanvas.is(other)
         local ocanvas, ox, oy = other[1], other[2]-1, other[3]-1
-        for y, row in pairs(ocanvas.dirty) do
-            for x, _ in pairs(row) do
-                -- if isPixel then
-                local tx = x+ox
-                local ty = y+oy
-                if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
-                    queuedDirty[ty] = queuedDirty[ty] or {}
-                    queuedDirty[ty][tx] = true
-                    c = c + 1
+        if ocanvas.allDirty then
+            for y = 1, ocanvas.height do
+                for x = 1, ocanvas.width do
+                    local tx = x+ox
+                    local ty = y+oy
+                    if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                        queuedDirty[ty] = queuedDirty[ty] or {}
+                        queuedDirty[ty][tx] = true
+                        c = c + 1
+                    end
                 end
+            end
+        else
+            for y, row in pairs(ocanvas.dirty) do
+                for x, _ in pairs(row) do
+                    -- if isPixel then
+                    local tx = x+ox
+                    local ty = y+oy
+                    if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                        queuedDirty[ty] = queuedDirty[ty] or {}
+                        queuedDirty[ty][tx] = true
+                        c = c + 1
+                    end
 
-                -- else
-                --     -- TODO: ewwwwwwww
-                --     queuedDirty[y*3] = queuedDirty[y*3] or {}
-                --     queuedDirty[y*3][x*2] = true
-                --     queuedDirty[y*3][x*2-1] = true
-                --     queuedDirty[y*3-1] = queuedDirty[y*3-1] or {}
-                --     queuedDirty[y*3-1][x*2] = true
-                --     queuedDirty[y*3-1][x*2-1] = true
-                --     queuedDirty[y*3-2] = queuedDirty[y*3-2] or {}
-                --     queuedDirty[y*3-2][x*2] = true
-                --     queuedDirty[y*3-2][x*2-1] = true
-                -- end
+                    -- else
+                    --     -- TODO: ewwwwwwww
+                    --     queuedDirty[y*3] = queuedDirty[y*3] or {}
+                    --     queuedDirty[y*3][x*2] = true
+                    --     queuedDirty[y*3][x*2-1] = true
+                    --     queuedDirty[y*3-1] = queuedDirty[y*3-1] or {}
+                    --     queuedDirty[y*3-1][x*2] = true
+                    --     queuedDirty[y*3-1][x*2-1] = true
+                    --     queuedDirty[y*3-2] = queuedDirty[y*3-2] or {}
+                    --     queuedDirty[y*3-2][x*2] = true
+                    --     queuedDirty[y*3-2][x*2-1] = true
+                    -- end
+                end
             end
         end
 

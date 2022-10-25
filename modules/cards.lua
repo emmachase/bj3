@@ -28,7 +28,7 @@ local function newDeck()
     local deck = {__opaque = true}
     for _, suit in ipairs(suits) do
         for _, rank in ipairs(ranks) do
-            deck[#deck + 1] = { suit = suit, rank = rank }
+            deck[#deck + 1] = { suit = suit, rank = rank } -- math.random()>0.5 and "A" or "10" }
         end
     end
     return _.shuffle(deck)

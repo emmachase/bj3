@@ -3,12 +3,12 @@ local score = {}
 ---Applies {fun} to each element of {list} and returns a list of the results.
 ---@generic T, U
 ---@param list T[]
----@param fun fun(x: T): U
+---@param fun fun(x: T, i: integer): U
 ---@return U[]
 function score.map(list, fun)
     local result = {__type = "list"}
     for i, v in ipairs(list) do
-        result[i] = fun(v)
+        result[i] = fun(v, i)
     end
     return result
 end
@@ -126,6 +126,19 @@ function score.copyDeep(t)
         end
     end
     return copy
+end
+
+---@generic T
+---@param list T[]
+---@return T[]
+function score.filterTruthy(list)
+    local result = {__type = "list"}
+    for i, v in ipairs(list) do
+        if v then
+            result[#result + 1] = v
+        end
+    end
+    return result
 end
 
 return score

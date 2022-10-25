@@ -28,6 +28,7 @@ function GameState.new()
 end
 
 function GameState:resetGame()
+    self.deck = Cards.newDeck()
     self.dealer = {hand = {}}
     for i = 1, 3 do
         if self.players[i] then
@@ -83,6 +84,7 @@ function GameState:dealTo(hand, hidden)
 
     table.insert(hand, card)
     waitForAnimation(card.uid)
+    coroutine.yield() -- Allow animation buffer to clear
 end
 
 function GameState:processAction(player, hand, input)
@@ -93,11 +95,20 @@ function GameState:processAction(player, hand, input)
     elseif input == "double" then
         local wallet = Wallet.getWallet(player.entity.id)
         wallet.balance = wallet.balance - hand.bet
+        player.bet = player.bet + hand.bet
         hand.bet = hand.bet * 2
         self:dealTo(hand)
         hand.didDoubleDown = true
     elseif input == "split" then
         -- TODO
+        local wallet = Wallet.getWallet(player.entity.id)
+        wallet.balance = wallet.balance - hand.bet
+        player.hands = { { bet = hand.bet, hand[2] }, { bet = hand.bet, hand[1] } }
+
+        cardUid = cardUid + 1
+        player.animationKey = cardUid
+        waitForAnimation(cardUid)
+        coroutine.yield()
     end
 end
 
@@ -128,6 +139,10 @@ local function runGame(state)
 
     for player in playerList(state.players) do
         while true do
+            if #player.hands[player.activeHand] < 2 then
+                state:dealTo(player.hands[player.activeHand])
+            end
+
             while Actions.canHit(player, player.hands[player.activeHand]) do
                 print("Waiting for player")
                 player.requestInput = true
@@ -140,13 +155,27 @@ local function runGame(state)
 
                 state:processAction(player, player.hands[player.activeHand], player.input)
                 player.input = nil
+
+                if #player.hands[player.activeHand] < 2 then
+                    state:dealTo(player.hands[player.activeHand])
+                end
             end
 
             if player.activeHand == #player.hands then
                 break
             else
+                if Actions.isSpecial(player, player.hands[player.activeHand]) then
+                    local displayTimer = os.startTimer(1)
+                    coroutine.yield("timer", displayTimer)
+                end
+
                 player.activeHand = player.activeHand + 1
+                cardUid = cardUid + 1
+                player.animationKey = cardUid
+                waitForAnimation(cardUid)
             end
+
+            coroutine.yield() -- Give buffer frame for animations
         end
 
         -- player.
@@ -164,6 +193,44 @@ local function runGame(state)
 
     local displayTimer = os.startTimer(1)
     coroutine.yield("timer", displayTimer)
+
+    -- Pay out bets
+    for player in playerList(state.players) do
+        local wallet = Wallet.getWallet(player.entity.id)
+        for handIndex = #player.hands, 1, -1 do --, hand in ipairs(player.hands) do
+            local hand = player.hands[handIndex]
+
+            -- Switch to the hand if not already on it
+            if player.activeHand ~= handIndex then
+                player.activeHand = handIndex
+                cardUid = cardUid + 1
+                player.animationKey = cardUid
+                waitForAnimation(cardUid)
+
+                displayTimer = os.startTimer(1)
+                coroutine.yield("timer", displayTimer)
+            end
+
+            local payout, message = Actions.payout(player, hand, state.dealer)
+            player.message = message
+
+            if payout - player.bet > 0 then
+                -- Play animation
+                player.payout = payout - player.bet
+                cardUid = cardUid + 1
+                player.animationKey = cardUid
+                waitForAnimation(cardUid)
+                player.payout = nil
+            end
+
+            wallet.balance = wallet.balance + payout
+
+            -- Allow time to read message
+            displayTimer = os.startTimer(0.75)
+            coroutine.yield("timer", displayTimer)
+            player.message = nil
+        end
+    end
 
     state:resetGame()
 

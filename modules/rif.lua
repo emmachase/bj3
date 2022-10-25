@@ -16,7 +16,7 @@ local PixelCanvas = canvases.PixelCanvas
 --     colors.cyan,
 --     colors.magenta,
 --     colors.pink,
---     colors.pink, -- closest to peach
+--     colors.darkGreen,
 --     colors.white
 -- }
 
@@ -35,7 +35,7 @@ local revPalMap = {
     "cyan",
     "magenta",
     "pink",
-    "pink", -- closest to peach
+    "darkGreen",
     "white"
 }
 

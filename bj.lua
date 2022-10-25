@@ -13,9 +13,13 @@ local BigText = require("components.BigText")
 local ChipStack = require("components.ChipStack")
 local PlayerSlot = require("components.PlayerSlot")
 local DealerModule = require("components.Dealer")
+local RenderCanvas = require("components.RenderCanvas")
 local Dealer, getDealerContext = DealerModule.Dealer, DealerModule.getDealerContext
 local Core = require("core.GameState")
 local GameRunner = require("core.GameRunner")
+
+local loadRIF = require("modules.rif")
+local banner = loadRIF("res/hi.rif")
 --- End Imports
 
 local Main = Solyd.wrapComponent("Main", function(props)
@@ -23,43 +27,50 @@ local Main = Solyd.wrapComponent("Main", function(props)
 
     return _.flat {
         BigText { text="Lyqyd Blackjack", x=124, y=10, bg=colors.lime },
+        -- BigText { text="PAYS 2:1   BLACKJACK PAYS 3:2   PAYS 2:1", x=55, y=120, bg=colors.green, color=colors.red },
+        -- BigText { text="Dealer must stand on all 17s", x=91, y=133, bg=colors.green },
 
-        ChipStack {
-            x = 10 + 10*0 + math.cos(props.t)*50+50,
-            y = 9 + math.sin(props.t)*30+50,
-            chipCount = 1,
-            chipValue = 1
+        RenderCanvas {
+            canvas = banner,
+            x = 1,
+            y = 30,
         },
 
-        ChipStack {
-            x = 10 + 10 + math.cos(props.t)*50+50,
-            y = 9 + math.sin(props.t)*30+50,
-            chipCount = 2,
-            chipValue = 5
-        },
+        -- ChipStack {
+        --     x = 10 + 10*0 + math.cos(props.t)*50+50,
+        --     y = 9 + math.sin(props.t)*30+50,
+        --     chipCount = 1,
+        --     chipValue = 1
+        -- },
 
-        ChipStack {
-            x = 10 + 10*2 + math.cos(props.t)*50+50,
-            y = 9 + math.sin(props.t)*30+50,
-            chipCount = 4,
-            chipValue = 10
-        },
+        -- ChipStack {
+        --     x = 10 + 10 + math.cos(props.t)*50+50,
+        --     y = 9 + math.sin(props.t)*30+50,
+        --     chipCount = 2,
+        --     chipValue = 5
+        -- },
 
-        ChipStack {
-            x = 10 + 10*3 + math.cos(props.t)*50+50,
-            y = 9 + math.sin(props.t)*30+50,
-            chipCount = 5,
-            chipValue = 25
-        },
+        -- ChipStack {
+        --     x = 10 + 10*2 + math.cos(props.t)*50+50,
+        --     y = 9 + math.sin(props.t)*30+50,
+        --     chipCount = 4,
+        --     chipValue = 10
+        -- },
 
-        ChipStack {
-            x = 10 + 10*4 + math.cos(props.t)*50+50,
-            y = 9 + math.sin(props.t)*30+50,
-            chipCount = 4,
-            chipValue = 100
-        },
+        -- ChipStack {
+        --     x = 10 + 10*3 + math.cos(props.t)*50+50,
+        --     y = 9 + math.sin(props.t)*30+50,
+        --     chipCount = 5,
+        --     chipValue = 25
+        -- },
 
-        Dealer {},
+        -- ChipStack {
+        --     x = 10 + 10*4 + math.cos(props.t)*50+50,
+        --     y = 9 + math.sin(props.t)*30+50,
+        --     chipCount = 4,
+        --     chipValue = 100
+        -- },
+
         _.rangeMap(3, function(i)
             local width = math.floor((canvas.width - 10)/3)-2
             return PlayerSlot {
@@ -71,6 +82,8 @@ local Main = Solyd.wrapComponent("Main", function(props)
                 -- end
             }
         end),
+
+        Dealer {},
     }, {
         canvas = {canvas, 1, 1},
         gameState = props.gameState or {}
@@ -84,27 +97,24 @@ local tree = nil
 local lastClock = os.epoch("utc")
 
 local lastCanvasStack = {}
-local weed
+local lastCanvasHash = {}
 local function diffCanvasStack(newStack)
     -- Find any canvases that were removed
     local removed = {}
-    local kept = {}
+    local kept, newCanvasHash = {}, {}
     for i = 1, #lastCanvasStack do
         removed[lastCanvasStack[i][1]] = lastCanvasStack[i]
     end
     for i = 1, #newStack do
-        if newStack[i].chk then
-            weed = newStack[i]
-            local numdirty = 0
-            for _, _ in pairs(newStack[i][1].dirty) do
-                numdirty = numdirty + 1
-            end
-        end
-
         if removed[newStack[i][1]] then
             kept[#kept+1] = newStack[i]
             removed[newStack[i][1]] = nil
+            newStack[i][1].allDirty = false
+        else -- New
+            newStack[i][1].allDirty = true
         end
+
+        newCanvasHash[newStack[i][1]] = newStack[i]
     end
 
     -- Mark rectangle of removed canvases on bgCanvas (TODO: using bgCanvas is a hack)
@@ -114,16 +124,19 @@ local function diffCanvasStack(newStack)
 
     -- For each kept canvas, mark the bounds if the new bounds are different
     for i = 1, #kept do
-        local oldCanvas = lastCanvasStack[i]
-        local newCanvas = newStack[i]
-        if oldCanvas[2] ~= newCanvas[2] or oldCanvas[3] ~= newCanvas[3] then
-            -- TODO: Optimize this?
-            display.bgCanvas:dirtyRect(oldCanvas[2], oldCanvas[3], oldCanvas[1].width, oldCanvas[1].height)
-            display.bgCanvas:dirtyRect(newCanvas[2], newCanvas[3], newCanvas[1].width, newCanvas[1].height)
+        local newCanvas = kept[i]
+        local oldCanvas = lastCanvasHash[newCanvas[1]]
+        if oldCanvas then
+            if oldCanvas[2] ~= newCanvas[2] or oldCanvas[3] ~= newCanvas[3] then
+                -- TODO: Optimize this?
+                display.bgCanvas:dirtyRect(oldCanvas[2], oldCanvas[3], oldCanvas[1].width, oldCanvas[1].height)
+                display.bgCanvas:dirtyRect(newCanvas[2], newCanvas[3], newCanvas[1].width, newCanvas[1].height)
+            end
         end
     end
 
     lastCanvasStack = newStack
+    lastCanvasHash = newCanvasHash
 end
 
 local gameState = Core.GameState.new()

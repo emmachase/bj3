@@ -1,6 +1,8 @@
 local Solyd = require("modules.solyd")
 
 local Cards = require("modules.cards")
+
+local BigText = require("components.BigText")
 local HandModule = require("components.Hand")
 local Hand = HandModule.Hand
 
@@ -42,6 +44,24 @@ local Dealer = Solyd.wrapComponent("Dealer", function(props)
     for i = 1, #gameState.dealer.hand do
         Animation.animationFinished[gameState.dealer.hand[i].uid] = true
     end
+
+    local cards = gameState.dealer.hand
+    local softValue = Cards.getHandValue(cards, false, true)
+    local hardValue = Cards.getHandValue(cards, false, false)
+
+    local isBlackjack, valueText = false, nil
+    if hardValue == 21 and #cards == 2 then
+        valueText = "Blackjack"
+        isBlackjack = true
+    elseif softValue > 0 then
+        if softValue == hardValue then
+            valueText = tostring(softValue)
+        else
+            valueText = tostring(softValue) .. "/" .. tostring(hardValue)
+        end
+    end
+
+
     -- end
     -- print("rerender", #gameState.dealer.hand)
 
@@ -54,7 +74,18 @@ local Dealer = Solyd.wrapComponent("Dealer", function(props)
     -- if #gameState.dealer.hand > 0 then
     -- print("isopqaue", gameState.dealer.hand)
     -- print("rerender")
-        return Hand { x=150, y=100, cards = {unpack(gameState.dealer.hand)} }
+        return {
+            Hand { x=150, y=92, cards = {unpack(gameState.dealer.hand)} },
+
+            BigText {
+                x = 150,
+                y = 122,
+                -- width = 50,
+                text = valueText or "",
+                color = colors.white,
+                bg = valueText and colors.green or nil,
+            },
+        }
         
     -- end
     -- end

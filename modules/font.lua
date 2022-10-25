@@ -49,7 +49,22 @@ function Font:getWidth(text)
         end
     end
 
+    if width == 0 then
+        return 0
+    end
+
     return width - 1
+end
+
+---Write right aligned
+---@param canvas PixelCanvas
+---@param text string
+---@param x integer
+---@param y integer
+---@param c integer
+function Font:writeRight(canvas, text, x, y, c)
+    local width = self:getWidth(text)
+    self:write(canvas, text, x - width + 1, y, c)
 end
 
 ---@param fontSheet PixelCanvas

@@ -1,4 +1,5 @@
 local _ = require("util.score")
+local bigfont = require("fonts.bigfont")
 
 local Solyd = require("modules.solyd")
 local Cards = require("modules.cards")
@@ -18,12 +19,15 @@ local list = Iter.list
 local Sprite = require("components.Sprite")
 local BigText = require("components.BigText")
 local ChipStack = require("components.ChipStack")
+local ChipGroup = require("components.ChipGroup")
 local Button = require("components.Button")
 local Flex = require("components.Flex")
+local WagerSelector = require("components.WagerSelector")
 local HandModule = require("components.Hand")
 local Hand, getDeckDims = HandModule.Hand, HandModule.getDeckDims
 
 local AnimatedPlayerHands = require("components.AnimatedPlayerHands")
+local Payout = require("components.Payout")
 
 local loadRIF = require("modules.rif")
 local playerSlotEmpty = loadRIF("res/cum.rif")
@@ -130,33 +134,48 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local dmx = ((getDeckDims(#cards) - getDeckDims(#afCards))/2)*(#afCards > 0 and 1 or 0)
     local amx = -math.min(dmx, (t or 0)*2*dmx)
 
+    local isBlackjack, valueText = false, nil
+    if hardValue == 21 and #afCards == 2 then
+        valueText = "Blackjack!"
+        isBlackjack = true
+    elseif softValue > 0 then
+        if softValue == hardValue then
+            valueText = tostring(softValue)
+        else
+            valueText = tostring(softValue) .. "/" .. tostring(hardValue)
+        end
+    end
+
+    local blackjackT = useAnimation(isBlackjack)
+
     if isFilled then
         local dealerRevealed = gameState.dealer.hand[2] and not gameState.dealer.hand[2].hidden
         local canAct = player.requestInput and not didBust and not dealerRevealed and not (player.input == "stood")
-        
-        local valueText
-        if hardValue == 21 and #afCards == 2 then
-            valueText = "Blackjack!"
-        elseif softValue > 0 then
-            if softValue == hardValue then
-                valueText = tostring(softValue)
-            else
-                valueText = tostring(softValue) .. "/" .. tostring(hardValue)
-            end
-        end
 
-        local playerName = BigText {
-            text = player.entity.displayName,
-            x = x,
+        local balanceText = "\164" .. tostring(Wallet.getWallet(player.entity.id).balance - pendingBet)
+        local balanceTextWidth = bigfont:getWidth(balanceText)
+        local playerBalance = BigText {
+            text = balanceText,
+            right = true,
+            x = x + props.width - 1,
             y = y - 12,
             color = colors.white,
             bg = colors.green,
         }
 
-        local playerBalance = BigText {
-            text = "\164" .. tostring(Wallet.getWallet(player.entity.id).balance - pendingBet),
-            right = true,
-            x = x + props.width - 1,
+        local playerNameText, truncatedPlayerName = player.entity.name, false
+        while bigfont:getWidth(playerNameText) > props.width - balanceTextWidth - 6 - (truncatedPlayerName and 8 or 0) do
+            playerNameText = playerNameText:sub(1, -2)
+            truncatedPlayerName = true
+        end
+
+        if truncatedPlayerName then
+            playerNameText = playerNameText .. ".."
+        end
+
+        local playerName = BigText {
+            text = playerNameText,
+            x = x,
             y = y - 12,
             color = colors.white,
             bg = colors.green,
@@ -177,6 +196,10 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
 
             local wallet = Wallet.getWallet(player.entity.id)
             local balance = wallet.balance - pendingBet
+            if balance < 0 then
+                pendingBet = setPendingBet(pendingBet + balance)
+                balance = wallet.balance - pendingBet
+            end
 
             return {
                 Sprite { sprite = hitSprite, x = x, y = y },
@@ -185,9 +208,9 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
 
                 BigText { 
                     text = "Bet: \164" .. tostring(pendingBet),
-                    x = props.x + 2,
+                    x = props.x + 2 + 32,
                     y = y + 2,
-                    width = props.width - 4,
+                    width = props.width - 4 - 32,
                     color = colors.white
                 },
 
@@ -220,116 +243,75 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     end,
                 },
 
-                balance >= 1 and ChipStack {
-                    x = props.x + 8 + 10*0,
+                -- balance >= 1 and ChipStack {
+                --     x = props.x + 8 + 10*0,
+                --     y = y + props.height - 32,
+                --     clear = colors.lime,
+                --     chipCount = 1,
+                --     chipValue = 1,
+                --     onClick = function()
+                --         setPendingBet(pendingBet + 1)
+                --     end,
+                -- },
+
+                -- balance >= 5 and ChipStack {
+                --     x = props.x + 8 + 10*2,
+                --     y = y + props.height - 32,
+                --     clear = colors.lime,
+                --     chipCount = 1,
+                --     chipValue = 5,
+                --     onClick = function()
+                --         setPendingBet(pendingBet + 5)
+                --     end,
+                -- },
+
+                -- balance >= 10 and ChipStack {
+                --     x = props.x + 8 + 10*4,
+                --     y = y + props.height - 32,
+                --     clear = colors.lime,
+                --     chipCount = 1,
+                --     chipValue = 10,
+                --     onClick = function()
+                --         setPendingBet(pendingBet + 10)
+                --     end,
+                -- },
+        
+                -- balance >= 25 and ChipStack {
+                --     x = props.x + 8 + 10*6,
+                --     y = y + props.height - 32,
+                --     clear = colors.lime,
+                --     chipCount = 1,
+                --     chipValue = 25,
+                --     onClick = function()
+                --         setPendingBet(pendingBet + 25)
+                --     end,
+                -- },
+        
+                -- balance >= 100 and ChipStack {
+                --     x = props.x + 8 + 10*8,
+                --     y = y + props.height - 32,
+                --     clear = colors.lime,
+                --     chipCount = 1,
+                --     chipValue = 100,
+                --     onClick = function()
+                --         setPendingBet(pendingBet + 100)
+                --     end,
+                -- },
+
+                -- -- Actual bet
+
+                ChipGroup {
+                    amount = pendingBet,
+                    x = props.x + 2 + 32 + (props.width - 4 - 32)/2,
                     y = y + props.height - 30,
-                    clear = colors.lime,
-                    chipCount = 1,
-                    chipValue = 1,
-                    onClick = function()
-                        setPendingBet(pendingBet + 1)
-                    end,
                 },
 
-                balance >= 5 and ChipStack {
-                    x = props.x + 8 + 10*2,
-                    y = y + props.height - 30,
-                    clear = colors.lime,
-                    chipCount = 1,
-                    chipValue = 5,
-                    onClick = function()
-                        setPendingBet(pendingBet + 5)
-                    end,
-                },
-
-                balance >= 10 and ChipStack {
-                    x = props.x + 8 + 10*4,
-                    y = y + props.height - 30,
-                    clear = colors.lime,
-                    chipCount = 1,
-                    chipValue = 10,
-                    onClick = function()
-                        setPendingBet(pendingBet + 10)
-                    end,
-                },
-        
-                balance >= 25 and ChipStack {
-                    x = props.x + 8 + 10*6,
-                    y = y + props.height - 30,
-                    clear = colors.lime,
-                    chipCount = 1,
-                    chipValue = 25,
-                    onClick = function()
-                        setPendingBet(pendingBet + 25)
-                    end,
-                },
-        
-                balance >= 100 and ChipStack {
-                    x = props.x + 8 + 10*8,
-                    y = y + props.height - 30,
-                    clear = colors.lime,
-                    chipCount = 1,
-                    chipValue = 100,
-                    onClick = function()
-                        setPendingBet(pendingBet + 100)
-                    end,
-                },
-
-                -- Actual bet
-
-                ChipStack {
-                    x = props.x + 8 + 10*0,
-                    y = y + props.height - 50,
-                    clear = colors.lime,
-                    chipCount = num1Chips,
-                    chipValue = 1,
-                    onClick = function()
-                        setPendingBet(pendingBet - 1)
-                    end,
-                },
-        
-                ChipStack {
-                    x = props.x + 8 + 10*2,
-                    y = y + props.height - 50,
-                    clear = colors.lime,
-                    chipCount = num5Chips,
-                    chipValue = 5,
-                    onClick = function()
-                        setPendingBet(pendingBet - 5)
-                    end,
-                },
-        
-                ChipStack {
-                    x = props.x + 8 + 10*4,
-                    y = y + props.height - 50,
-                    clear = colors.lime,
-                    chipCount = num10Chips,
-                    chipValue = 10,
-                    onClick = function()
-                        setPendingBet(pendingBet - 10)
-                    end,
-                },
-        
-                ChipStack {
-                    x = props.x + 8 + 10*6,
-                    y = y + props.height - 50,
-                    clear = colors.lime,
-                    chipCount = num25Chips,
-                    chipValue = 25,
-                    onClick = function()
-                        setPendingBet(pendingBet - 25)
-                    end,
-                },
-        
-                ChipStack {
-                    x = props.x + 8 + 10*8,
-                    y = y + props.height - 50,
-                    clear = colors.lime,
-                    chipCount = num100Chips,
-                    chipValue = 100,
-                    onClick = function()
-                        setPendingBet(pendingBet - 100)
-                    end,
+                WagerSelector {
+                    x = props.x + 1,
+                    y = y + 1,
+                    balance = balance,
+                    wager = pendingBet,
+                    setWager = setPendingBet,
                 }
             }
         end
@@ -342,7 +324,15 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
 
                 playerName, playerBalance,
 
+                ChipGroup {
+                    amount = player.bet,
+                    x = props.x + props.width/4,
+                    y = y - 28,
+                    clear = colors.green,
+                },
+
                 AnimatedPlayerHands {
+                    player = player,
                     hands = player.hands,
                     activeHand = player.activeHand,
                     x = x,
@@ -351,6 +341,13 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     height = props.height,
                     clear = clearColor,
                 },
+
+                player.payout and Payout {
+                    amount = player.payout,
+                    targetX = props.x + props.width,
+                    targetY = y,-- - 13,
+                    animationKey = player.animationKey
+                } or false,
 
                 -- Hand { x=x+(props.width - getDeckDims(#afCards))/2+amx -- x+1
                 -- , y=y+26, cards = afCards, clear = clearColor },
@@ -374,12 +371,23 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     y = y+14,
                     width = props.width-4,
                     text = valueText or "",
-                    color = colors.white,
+                    color = blackjackT and ({
+                        colors.white, colors.yellow, colors.orange, colors.red,
+                        colors.white, colors.yellow, colors.orange, colors.red
+                    })[math.floor(blackjackT*15 + 1)] or colors.white,
                     bg = clearColor,
                 },
+                player.message and BigText {
+                    x = x+2,
+                    y = y+54,
+                    width = props.width-4,
+                    text = player.message,
+                    color = colors.white,
+                    bg = clearColor,
+                } or false,
                 canAct and Flex {
                     x = x+2,
-                    y = y+props.height-14,
+                    y = y+props.height-(#player.hands > 1 and 21 or 14),
                     width = props.width-4,
                     children = {
                         Actions.canDoubleDown(player, player.hands[player.activeHand]) and Button {
@@ -403,7 +411,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                             end,
                         },
                     }
-                }
+                },
             --     }
             -- }
             -- getHandValue(cards, true, true) > 21 and BigText { text = "UR A FUCKING IDIOT", x=x+10, y=y-10, color=colors.red },

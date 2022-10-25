@@ -11,7 +11,7 @@ local function copy(t)
     return new
 end
 
----@alias Step { duration: number, to: table?, easing: function? }
+---@alias Step { duration: number, to: table?, easing: function | table<string, function> | nil }
 
 ---@class AnimationDescriptor
 ---@field sprite PixelCanvas
@@ -54,7 +54,11 @@ local function evaluateSingleAnimation(animation, t)
             if step.to then
                 local easingFunction = step.easing or Ease.linear
                 for k, v in pairs(step.to) do
-                    state[k] = easingFunction(t, state[k], v - state[k], step.duration)
+                    if type(easingFunction) == "function" then
+                        state[k] = easingFunction(t, state[k], v - state[k], step.duration)
+                    else ---@cast easingFunction table
+                        state[k] = (easingFunction[k] or Ease.linear)(t, state[k], v - state[k], step.duration)
+                    end
                 end
             end
 

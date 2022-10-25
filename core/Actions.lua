@@ -1,7 +1,15 @@
 local Cards = require("modules.cards")
 local Wallet = require("modules.wallet")
 
-local function canHit(player, hand)
+local Actions = {}
+
+---Is Blackjack or a Bust
+function Actions.isSpecial(player, hand)
+    local total = Cards.getHandValue(hand, true, false)
+    return (#hand == 2 and total == 21) or total > 21
+end
+
+function Actions.canHit(player, hand)
     local optimalHand = Cards.getHandValue(hand, true, false)
     return optimalHand < 21
     and not hand.didDoubleDown
@@ -9,16 +17,16 @@ local function canHit(player, hand)
     -- return not hand.didDoubleDown
 end
 
-local function canDealerHit(dealer, hand)
+function Actions.canDealerHit(dealer, hand)
     local optimalHand = Cards.getHandValue(hand, true, false)
     return optimalHand < 17
 end
 
--- local function canStand
+-- function Actions.canStand
 
 ---@param player Player
 ---@param hand PlayerHand
-local function canDoubleDown(player, hand)
+function Actions.canDoubleDown(player, hand)
     local wallet = Wallet.getWallet(player.entity.id)
     return #hand == 2
     and wallet.balance >= hand.bet
@@ -27,17 +35,37 @@ end
 
 ---@param player Player
 ---@param hand PlayerHand
-local function canSplit(player, hand)
+function Actions.canSplit(player, hand)
     local wallet = Wallet.getWallet(player.entity.id)
-    return #hand == 2
+    return #player.hands == 1 and #hand == 2
     and wallet.balance >= hand.bet
     and Cards.baseValue[hand[1].rank] == Cards.baseValue[hand[2].rank]
     -- and not hand.didDoubleDown
 end
 
-return {
-    canHit = canHit,
-    canDealerHit = canDealerHit,
-    canDoubleDown = canDoubleDown,
-    canSplit = canSplit,
-}
+---@param player Player
+---@param hand PlayerHand
+---@param dealer Dealer
+---@return number payout, string? message
+function Actions.payout(player, hand, dealer)
+    local dealerTotal = Cards.getHandValue(dealer.hand, true, false)
+    local playerTotal = Cards.getHandValue(hand, true, false)
+
+    if (playerTotal == 21 and #hand == 2) and not (dealerTotal == 21 and #dealer.hand == 2) then
+        return hand.bet * 2.5
+    elseif playerTotal > 21 then
+        return 0, "Bust"
+    elseif (dealerTotal == 21 and #dealer.hand == 2) and not (playerTotal == 21 and #hand == 2) then
+        return 0, "Dealer Blackjack"
+    elseif dealerTotal > 21 then
+        return hand.bet * 2, "House Bust!"
+    elseif playerTotal == dealerTotal then
+        return hand.bet, "Push"
+    elseif playerTotal > dealerTotal then
+        return hand.bet * 2, "You Win!"
+    else
+        return 0, "You Lose"
+    end
+end
+
+return Actions

@@ -19,7 +19,7 @@ local chipColor = {
     [1] = colors.white,
     [5] = colors.red,
     [10] = colors.cyan,
-    [25] = colors.green,
+    [25] = colors.darkGreen,
     [100] = colors.black,
 }
 
@@ -69,7 +69,7 @@ return Solyd.wrapComponent("ChipStack", function(props)
     end, { props.chipCount, props.chipValue, props.clear })
 
     return nil, {
-        canvas = {sprite, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3, chk = true},
+        canvas = {sprite, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3, chk = props.key ~= nil},
         aabb = props.onClick and useBoundingBox(props.x, props.y - offsetY, chipStackTop.width, height, props.onClick)
     }
     -- return Sprite {

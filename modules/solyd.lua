@@ -181,12 +181,12 @@ function Solyd.getTopologicalContext(tree, keys)
 
         if node.dom then
             if node.dom.src and node.dom.src.__tag == "element" then
-                table.insert(queue, node.dom)
+                table.insert(queue, 1, node.dom)
             else
-                for i = 1, #node.dom do
+                for i = #node.dom, 1, -1 do
                     if type(node.dom[i]) == "table" and node.dom[i].src then
                         assert(node.dom[i].src.__tag == "element", "Invalid tree")
-                        table.insert(queue, node.dom[i])
+                        table.insert(queue, 1, node.dom[i])
                     end
                 end
             end
@@ -503,11 +503,15 @@ end
 ---@param rootComponent SolydElement
 ---@return table?
 function Solyd.render(previousTree, rootComponent)
+    local wasHook = __hook
+
     local tree = _render(previousTree, rootComponent)
     repeat
         setChange = false
         tree = _cleanDirty(tree)
     until not setChange
+
+    __hook = wasHook -- Support nested render calls
 
     return tree
 end
