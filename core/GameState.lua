@@ -100,7 +100,6 @@ function GameState:processAction(player, hand, input)
         self:dealTo(hand)
         hand.didDoubleDown = true
     elseif input == "split" then
-        -- TODO
         local wallet = Wallet.getWallet(player.entity.id)
         wallet.balance = wallet.balance - hand.bet
         player.hands = { { bet = hand.bet, hand[2] }, { bet = hand.bet, hand[1] } }
@@ -214,9 +213,9 @@ local function runGame(state)
             local payout, message = Actions.payout(player, hand, state.dealer)
             player.message = message
 
-            if payout - player.bet > 0 then
+            if payout - hand.bet > 0 then
                 -- Play animation
-                player.payout = payout - player.bet
+                player.payout = payout - hand.bet
                 cardUid = cardUid + 1
                 player.animationKey = cardUid
                 waitForAnimation(cardUid)
