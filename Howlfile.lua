@@ -62,6 +62,10 @@ function MapTask:initialize(input, output)
 end
 
 Tasks:injectTask(Tasks:Task "encodeu8" (function(self, context, task)
+    local iF = fs.open(fs.combine(shell.dir(), task.input.path), "rb")
+    task.input.contents = iF.readAll()
+    iF.close()
+
     local oF = fs.open(fs.combine(shell.dir(), task.output), "wb")
     oF.write("return \"" .. base64.encode(task.input.contents) .. "\"")
     oF.close()
