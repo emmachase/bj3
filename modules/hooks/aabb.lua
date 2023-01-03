@@ -18,15 +18,17 @@ local function findNodeAt(boxes, x, y)
     -- x, y = x*2, y*3
     for i = #boxes, 1, -1 do
         local box = boxes[i]
-        if box.__type == "list" then
-            local node = findNodeAt(box, x, y)
-            if node then
-                return node
-            end
-        else
-            if  x*2 >= box.x and x*2-1 < box.x + box.w
-            and y*3 >= box.y and y*3-2 < box.y + box.h then
-                return box
+        if type(box) == "table" then
+            if box.__type == "list" then
+                local node = findNodeAt(box, x, y)
+                if type(node) == "table" then
+                    return node
+                end
+            else
+                if  x*2 >= box.x and x*2-1 < box.x + box.w
+                and y*3 >= box.y and y*3-2 < box.y + box.h then
+                    return box
+                end
             end
         end
     end

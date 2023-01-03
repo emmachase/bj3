@@ -141,4 +141,22 @@ function score.filterTruthy(list)
     return result
 end
 
+---@alias RangeTable { [1]: number, [2]: number, [3]: number? }
+
+---@generic T
+---@param xRange RangeTable
+---@param yRange RangeTable
+---@param generator fun(x: number, y: number, i: number): T
+---@return T[]
+function score.range2D(xRange, yRange, generator)
+    local result, n = {__type = "list"}, 0
+    for i = xRange[1], xRange[2], xRange[3] or 1 do
+        for j = yRange[1], yRange[2], yRange[3] or 1 do
+            n = n + 1
+            result[n] = generator(i, j, n)
+        end
+    end
+    return result
+end
+
 return score
