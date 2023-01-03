@@ -16,11 +16,8 @@ local function useAnimation(playing)
 
         return t
     elseif t ~= 0 then
-        print("reset")
         setT(0)
         return
-    else
-        -- print("ff", t)
     end
 end
 

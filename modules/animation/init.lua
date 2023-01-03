@@ -85,7 +85,6 @@ local function evaluateAnimationSets(animationSets, t)
             local animationState, consumedTime, finished = evaluateSingleAnimation(animationSet[i], remainingTime)
             setContents[i] = animationState
 
-            print("c", consumedTime, finished)
             setDuration = math.max(setDuration, consumedTime)
             if not finished then
                 allFinished = false

@@ -243,7 +243,7 @@ return Solyd.wrapComponent("AnimatedPlayerHands", function(props)
 
         
 
-        print(t, isFinished)
+        -- print(t, isFinished)
         if isFinished then
             currentAnimation.value = nil
             if props.player.animationKey then

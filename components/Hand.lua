@@ -10,18 +10,18 @@ local PixelCanvas = canvases.PixelCanvas
 local Sprite = require("components.Sprite")
 local cardFont = require("fonts.cardfont")
 
-local cardFirstAnimated = loadRIF("res/card-a.rif")
-local cardFirst  = loadRIF("res/card.rif")
-local cardMiddle = loadRIF("res/card2.rif")
-local cardLast   = loadRIF("res/card-s.rif")
-local cardBack   = loadRIF("res/cardfill.rif")
+local cardFirstAnimated = loadRIF("card-a")
+local cardFirst  = loadRIF("card")
+local cardMiddle = loadRIF("card2")
+local cardLast   = loadRIF("card-s")
+local cardBack   = loadRIF("cardfill")
 
-local suitHeart   = loadRIF("res/heart.rif")
-local suitSpade   = loadRIF("res/spade.rif")
-local suitClub    = loadRIF("res/club.rif")
-local suitDiamond = loadRIF("res/diamond.rif")
+local suitHeart   = loadRIF("heart")
+local suitSpade   = loadRIF("spade")
+local suitClub    = loadRIF("club")
+local suitDiamond = loadRIF("diamond")
 
-print(cardFirstAnimated.width, cardMiddle.width, cardLast.width)
+-- print(cardFirstAnimated.width, cardMiddle.width, cardLast.width)
 
 
 local function getDeckDims(deckCnt)
@@ -32,7 +32,7 @@ local function getDeckDims(deckCnt)
     return cardFirstAnimated.width + (deckCnt - 1) * cardMiddle.width + cardLast.width + 1, cardFirstAnimated.height
 end
 
-print(getDeckDims(1))
+-- print(getDeckDims(1))
 
 local function makeSprite(cards, clear)
     if #cards == 0 then

@@ -55,9 +55,6 @@ local function launchGame(gameState, mainFunction)
         if canResume then
             -- print("resuming...")
             status, gameFilter, uidFilter = coroutine.resume(gameCoroutine)
-            if gameFilter then
-                print("new filter:", gameFilter)
-            end
 
             if not status then
                 error(gameFilter)

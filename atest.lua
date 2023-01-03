@@ -1,7 +1,11 @@
 -- Read 8-bit signed pcm from file
-local handle = fs.open("audio/cardFan2.u8", "rb")
-local data = handle.readAll()
-handle.close()
+
+local base64 = require("util.base64")
+local data = base64.decode(require("audio.cardFan2"))
+
+-- local handle = fs.open("audio/cardFan2.u8", "rb")
+-- local data = handle.readAll()
+-- handle.close()
 
 local samples = {}
 for i = 1, #data do

@@ -5,7 +5,12 @@ local TextCanvas = canvases.TextCanvas
 
 
 local mon = peripheral.find("monitor")
-mon.setTextScale(0.5)
+if mon then
+    mon.setTextScale(0.5)
+else
+    mon = term
+end
+
 
 -- Set Riko Palette
 require("util.riko")(mon)

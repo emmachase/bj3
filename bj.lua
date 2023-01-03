@@ -19,7 +19,7 @@ local Core = require("core.GameState")
 local GameRunner = require("core.GameRunner")
 
 local loadRIF = require("modules.rif")
-local banner = loadRIF("res/hi.rif")
+local banner = loadRIF("hi")
 --- End Imports
 
 local Main = Solyd.wrapComponent("Main", function(props)
@@ -166,6 +166,12 @@ GameRunner.launchGame(gameState, function()
             deltaTimer = os.startTimer(0)
 
             hooks.tickAnimations(dt)
+        elseif name == "mouse_click" then
+            local x, y = e[3], e[4]
+            local node = hooks.findNodeAt(context.aabb, x, y)
+            if node then
+                node.onClick({ name = "dummy", id = "dummy-id" })
+            end
         elseif name == "monitor_touch" then
             local x, y = e[3], e[4]
             local player = auth.reconcileTouch(x, y)

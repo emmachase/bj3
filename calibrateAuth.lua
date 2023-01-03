@@ -35,6 +35,14 @@ end
 
 local function getOnePlayer()
     local players = getPlayers()
+
+    -- Find player with name "anemonemma"
+    for i = 1, #players do
+        if players[i].name == "anemonemma" then
+            return players[i]
+        end
+    end
+
     if #players == 1 then
         return players[1]
     end

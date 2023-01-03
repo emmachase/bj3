@@ -1,6 +1,8 @@
 local canvases = require("modules.canvas")
 local PixelCanvas = canvases.PixelCanvas
 
+local base64 = require("util.base64")
+
 -- local palMap = {
 --     colors.black,
 --     colors.blue,
@@ -48,8 +50,9 @@ end
 return function(filename)
     -- Riko 4 image format
 
-    local file = fs.open(filename, "rb")
-    local data = file.readAll()
+    -- local file = fs.open(filename, "rb")
+    -- local data = file.readAll()
+    local data = base64.decode(require("res." .. filename))
 
     local width, height = data:byte(5) * 256 + data:byte(6), data:byte(7) * 256 + data:byte(8)
     local canv = PixelCanvas(width, height)

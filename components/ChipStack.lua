@@ -7,13 +7,13 @@ local useCanvas, useBoundingBox = hooks.useCanvas, hooks.useBoundingBox
 local canvases = require("modules.canvas")
 local PixelCanvas = canvases.PixelCanvas
 
-local Sprite = require("components.sprite")
+local Sprite = require("components.Sprite")
 
 
-local chip = loadRIF("res/chip.rif")
-local chipStackBottom = loadRIF("res/chipstack-bottom.rif")
-local chipStackMiddle = loadRIF("res/chipstack-middle.rif")
-local chipStackTop    = loadRIF("res/chipstack-top.rif")
+local chip = loadRIF("chip")
+local chipStackBottom = loadRIF("chipstack-bottom")
+local chipStackMiddle = loadRIF("chipstack-middle")
+local chipStackTop    = loadRIF("chipstack-top")
 
 local chipColor = {
     [1] = colors.white,

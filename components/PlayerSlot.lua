@@ -30,7 +30,7 @@ local AnimatedPlayerHands = require("components.AnimatedPlayerHands")
 local Payout = require("components.Payout")
 
 local loadRIF = require("modules.rif")
-local playerSlotEmpty = loadRIF("res/cum.rif")
+local playerSlotEmpty = loadRIF("cum")
 
 local animDuration = 0.5
 
@@ -94,10 +94,6 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
         return canv
     end, { clearColor, props.width, props.height })
 
-    if clearColor == colors.red then
-        print(#afCards)
-    end
-
     local x, y = props.x, Display.ccCanvas.pixelCanvas.height-props.height-2
 
     local t = useAnimation(#cards ~= #afCards)
@@ -108,9 +104,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             finishedAnimations[card.uid] = true
         end
 
-        print("finishs", #cards, #afCards)
         afCards = setAfCards({unpack(cards)})
-        print("finishs", #cards, #afCards)
         t = nil
         finished = true
     elseif #cards ~= #afCards and not gameState.running then
@@ -238,7 +232,6 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     bg = colors.red,
                     color = colors.white,
                     onClick = function()
-                        print("ioopoop")
                         gameState.players[playerId] = nil
                     end,
                 },

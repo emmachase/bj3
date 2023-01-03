@@ -129,10 +129,10 @@ local function runGame(state)
 
     for i = 1, 2 do
         for player in playerList(state.players) do
-            print("Dealing to player")
+            -- print("Dealing to player")
             state:dealTo(player.hands[1])
         end
-        print("Dealing to dealer")
+        -- print("Dealing to dealer")
         state:dealTo(state.dealer.hand, --[[hidden:]] i == 2)
     end
 
@@ -143,7 +143,7 @@ local function runGame(state)
             end
 
             while Actions.canHit(player, player.hands[player.activeHand]) do
-                print("Waiting for player")
+                -- print("Waiting for player")
                 player.requestInput = true
 
                 while player.input == nil do
@@ -186,7 +186,7 @@ local function runGame(state)
 
     -- Dealer hits until 17
     while Actions.canDealerHit(state.dealer, state.dealer.hand) do
-        print("Waiting for dealer")
+        -- print("Waiting for dealer")
         state:dealTo(state.dealer.hand)
     end
 
@@ -232,8 +232,6 @@ local function runGame(state)
     end
 
     state:resetGame()
-
-    print("did reset")
 
     return runGame(state) -- Tail call optimization go brr
 end

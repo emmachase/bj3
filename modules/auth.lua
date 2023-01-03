@@ -1,6 +1,7 @@
 local sensor = peripheral.find("manipulator")
 
 local monitorWidth, monitorHeight -- = monitor.getSize()
+local disabled = false
 
 -- Some experimental values good enough to just calculate the monitor plane since we can snap to blocks
 -- These are mutated later to be exact, these are NOT constants!!!
@@ -251,6 +252,10 @@ local calibration
 
 -- Try to find a player that is looking at that position on the monitor
 local function reconcileTouch(x, y)
+    if disabled then
+        return { name = "dummy" }
+    end
+
     local players = getPlayers()
 
     local foundPlayer = nil
@@ -326,6 +331,11 @@ end
 
 return {
     initialize = function(monitor)
+        if not monitor.setTextScale then
+            disabled = true
+            return -- Not a monitor
+        end
+
         monitorWidth, monitorHeight = monitor.getSize()
 
         if fs.exists("calibration") then

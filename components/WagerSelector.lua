@@ -8,8 +8,8 @@ local PixelCanvas = canvases.PixelCanvas
 local bigFont = require("fonts.bigfont")
 
 local loadRIF = require("modules.rif")
-local plus  = loadRIF("res/plus.rif")
-local minus = loadRIF("res/minus.rif")
+local plus  = loadRIF("plus")
+local minus = loadRIF("minus")
 
 -- local hooks = require("modules.hooks")
 -- local useCanvas = hooks.useCanvas

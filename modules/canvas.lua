@@ -1,3 +1,27 @@
+--[[
+MIT License
+
+Copyright (c) 2022 emmachase
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+]]
+
 local floor, ceil, min, max, abs, concat = math.floor, math.ceil, math.min, math.max, math.abs, table.concat
 local function round(x) return floor(x + 0.5) end
 
@@ -311,7 +335,7 @@ function TextCanvas.new(width, height)
     local self = setmetatable({__opaque = true}, TextCanvas_mt)
     self.width = width
     self.height = height
-
+    self.brand = "TextCanvas"
     self.canvas = {}
     for y = 1, height do
         self.canvas[y] = {}
@@ -430,9 +454,9 @@ function TeletextCanvas:composite(...)
     local partitionSize = 20
     local partitions = {}
     for y = 1, self.height*3, partitionSize do
-        partitions[floor(y/partitionSize)+1] = {}
+        partitions[ceil(y/partitionSize)] = {}
         for x = 1, self.width*2, partitionSize do
-            partitions[floor(y/partitionSize)+1][floor(x/partitionSize)+1] = {}
+            partitions[ceil(y/partitionSize)][ceil(x/partitionSize)] = {}
         end
     end
     -- local t2 = os.epoch("utc")
@@ -445,13 +469,14 @@ function TeletextCanvas:composite(...)
         -- if PixelCanvas.is(other) then
         local otherCanvas, otherX, otherY = other[1], other[2], other[3]
 
-        local originPartitionX = floor(otherX/partitionSize)*partitionSize+1
-        local originPartitionY = floor(otherY/partitionSize)*partitionSize+1
+        local originPartitionX = (ceil(otherX/partitionSize) - 1)*partitionSize + 1
+        local originPartitionY = (ceil(otherY/partitionSize) - 1)*partitionSize + 1
 
-        for y = originPartitionY, otherY+otherCanvas.height-1, partitionSize do
-            for x = originPartitionX, otherX+otherCanvas.width-1, partitionSize do
-                local px = floor(x/partitionSize)+1
-                local py = floor(y/partitionSize)+1
+        --TODO: This is a hack, should use -1 instead of +1
+        for y = originPartitionY, otherY+otherCanvas.height+1, partitionSize do
+            for x = originPartitionX, otherX+otherCanvas.width+1, partitionSize do
+                local px = ceil(x/partitionSize)
+                local py = ceil(y/partitionSize)
                 local partition = (partitions[py] or {})[px]
                 if partition then
                     partition[#partition + 1] = other
@@ -467,43 +492,75 @@ function TeletextCanvas:composite(...)
     local queuedDirty = {}
     local c = 0
     for _, other in ipairs(others) do
-        -- local isPixel = PixelCanvas.is(other)
+        
         local ocanvas, ox, oy = other[1], other[2]-1, other[3]-1
+        local isPixel = ocanvas.brand ~= "TextCanvas"
         if ocanvas.allDirty then
             for y = 1, ocanvas.height do
                 for x = 1, ocanvas.width do
-                    local tx = x+ox
-                    local ty = y+oy
-                    if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
-                        queuedDirty[ty] = queuedDirty[ty] or {}
-                        queuedDirty[ty][tx] = true
-                        c = c + 1
+                    if isPixel then
+                        local tx = x+ox
+                        local ty = y+oy
+                        if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                            queuedDirty[ty] = queuedDirty[ty] or {}
+                            queuedDirty[ty][tx] = true
+                            c = c + 1
+                        end
+                    else
+                        local tx = x*2-1 + ox
+                        local ty = y*3-2 + oy
+                        -- print(ty)
+                        if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                            queuedDirty[ty] = queuedDirty[ty] or {}
+                            queuedDirty[ty][tx] = true
+                            c = c + 1
+                        end
                     end
                 end
             end
         else
             for y, row in pairs(ocanvas.dirty) do
                 for x, _ in pairs(row) do
-                    -- if isPixel then
-                    local tx = x+ox
-                    local ty = y+oy
-                    if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
-                        queuedDirty[ty] = queuedDirty[ty] or {}
-                        queuedDirty[ty][tx] = true
-                        c = c + 1
+                    if isPixel then
+                        local tx = x+ox
+                        local ty = y+oy
+                        if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                            queuedDirty[ty] = queuedDirty[ty] or {}
+                            queuedDirty[ty][tx] = true
+                            c = c + 1
+                        end
+                    else
+                        local tx = x*2-1 + ox
+                        local ty = y*3-2 + oy
+                        -- print(ty)
+                        if tx >= 1 and tx <= self.width*2 and ty >= 1 and ty <= self.height*3 then
+                            queuedDirty[ty] = queuedDirty[ty] or {}
+                            queuedDirty[ty][tx] = true
+                            c = c + 1
+                        end
+                        -- print(y)
+                        -- for gayY = y-10,y+10 do
+                        --     if gayY > 1 and gayY <= #ocanvas.dirty then
+                        --         for gayX = x-10,x+10 do
+                        --             if gayX > 1 and gayX <= #row then
+                        --                 queuedDirty[y*3] = queuedDirty[y*3] or {}
+                        --                 queuedDirty[y*3][x*2] = true
+                        --                 queuedDirty[y*3][x*2-1] = true
+                        --                 queuedDirty[y*3-1] = queuedDirty[y*3-1] or {}
+                        --                 queuedDirty[y*3-1][x*2] = true
+                        --                 queuedDirty[y*3-1][x*2-1] = true
+                        --                 queuedDirty[y*3-2] = queuedDirty[y*3-2] or {}
+                        --                 queuedDirty[y*3-2][x*2] = true
+                        --                 queuedDirty[y*3-2][x*2-1] = true
+                        --             end
+                        --         end
+                        --     end
+                        -- end
                     end
 
                     -- else
                     --     -- TODO: ewwwwwwww
-                    --     queuedDirty[y*3] = queuedDirty[y*3] or {}
-                    --     queuedDirty[y*3][x*2] = true
-                    --     queuedDirty[y*3][x*2-1] = true
-                    --     queuedDirty[y*3-1] = queuedDirty[y*3-1] or {}
-                    --     queuedDirty[y*3-1][x*2] = true
-                    --     queuedDirty[y*3-1][x*2-1] = true
-                    --     queuedDirty[y*3-2] = queuedDirty[y*3-2] or {}
-                    --     queuedDirty[y*3-2][x*2] = true
-                    --     queuedDirty[y*3-2][x*2-1] = true
+                        
                     -- end
                 end
             end
@@ -521,15 +578,19 @@ function TeletextCanvas:composite(...)
         for x, _ in pairs(row) do
             local targetX = ceil(x / 2)
             local currPixel = self.pixelCanvas.canvas[y][x]
-            local partition = partitions[floor(y/partitionSize)+1][floor(x/partitionSize)+1]
+            partitionY = ceil(y/partitionSize) --math.min(floor(y/partitionSize)+1, #partitions)
+            partitionX = ceil(x/partitionSize) --math.min(floor(x/partitionSize)+1, #partitions[1])
+            --print("getting partition (partizion size " .. partitionSize .. ") at x: " .. x .. ", y: " .. y .. " -> ".. floor(x/partitionSize)+1 .. ", " .. floor(y/partitionSize)+1)
+            --print("Partitions size: " .. #partitions[1] .. ", " .. #partitions)
+            local partition = partitions[partitionY][partitionX]
 
             local found = false
             -- local foundText = false
             for i = #partition, 1, -1 do
                 local other = partition[i]
                 local otherCanvas, ox, oy = other[1], other[2], other[3]
-                -- if PixelCanvas.is(otherCanvas) then ---@cast other PixelCanvas
-                -- t1 = os.epoch("utc")
+                if PixelCanvas.is(otherCanvas) then ---@cast other PixelCanvas
+                    t1 = os.epoch("utc")
                     if otherCanvas.canvas[y-oy+1] then
                         local otherPixel = (otherCanvas.canvas[y-oy+1] or {})[x-ox+1]
                         if otherPixel then
@@ -540,46 +601,70 @@ function TeletextCanvas:composite(...)
                                 self.dirty[targetY][targetX] = true
                             end
 
+                            if self.canvas[targetY].direct[targetX] then
+                                self.canvas[targetY].direct[targetX] = false
+                                self.dirty[targetY][targetX] = true
+                            end
                             break
                         end
                     end
-                -- t2 = os.epoch("utc")
-                -- else ---@cast other TextCanvas
-                --     local otherRow = other.canvas[targetY]
-                --     local otherT = otherRow.t[targetX]
-                --     local otherC = otherRow.c[targetX]
-                --     local otherB = otherRow.b[targetX]
-                --     if otherT then
-                --         found = true
-                --         foundText = true
+                t2 = os.epoch("utc")
+                else ---@cast other TextCanvas
+                    -- print( targetX .. ", " .. targetY .. ": " .. ox .. ", " .. oy .. " -> " .. x .. ", " .. y)
+                    local ty = ceil((y-oy+1)/3) --ceil(targetY - oy / 3)
+                    local tx = ceil((x-ox+1)/2) --ceil(targetX - ox / 2)
+                    -- print(tx .. " " .. ty)
+                    -- if ty == 1 then
+                        -- print("fuck")
+                        -- print(#otherCanvas.canvas)
+                        -- print(#otherCanvas.canvas[ty].t)
+                        -- sleep(1)
+                    -- end
+                    if otherCanvas.canvas[ty] and otherCanvas.canvas[ty].c[tx] then
+                        -- print("found text")
+                        local otherRow = otherCanvas.canvas[ty]
+                        local otherT = otherRow.t[tx]
+                        local otherC = otherRow.c[tx]
+                        local otherB = otherRow.b[tx]
+                        if otherT then
+                            found = true
+                            foundText = true
 
-                --         local currRow = self.canvas[targetY]
-                --         local currT = currRow.t[targetX]
-                --         local currC = currRow.c[targetX]
-                --         local currB = currRow.b[targetX]
+                            local currRow = self.canvas[targetY]
+                            local currT = currRow.t[targetX]
+                            local currC = currRow.c[targetX]
+                            local currB = currRow.b[targetX]
 
-                --         if otherT ~= currT or otherC ~= currC or otherB ~= currB then
-                --             currRow.t[targetX] = otherT
-                --             currRow.c[targetX] = otherC
-                --             currRow.b[targetX] = otherB
-                --             currRow.direct[targetX] = true
-                --             self.dirty[targetY][targetX] = false -- Already processed
+                            if otherT ~= currT or otherC ~= currC or otherB ~= currB then
+                                currRow.t[targetX] = otherT
+                                currRow.c[targetX] = otherC
+                                currRow.b[targetX] = otherB
+                                currRow.direct[targetX] = true
+                                self.dirty[targetY][targetX] = false -- Already processed
 
-                --             local dirtyRow = self.dirtyRows[targetY] or {}
-                --             local minX, maxX = dirtyRow[1], dirtyRow[2]
-                --             minX = minX and min(minX, targetX) or targetX
-                --             maxX = maxX and max(maxX, targetX) or targetX
-                --             self.dirtyRows[targetY] = { minX, maxX }
-                --         end
+                                local dirtyRow = self.dirtyRows[targetY] or {}
+                                local minX, maxX = dirtyRow[1], dirtyRow[2]
+                                minX = minX and min(minX, targetX) or targetX
+                                maxX = maxX and max(maxX, targetX) or targetX
+                                self.dirtyRows[targetY] = { minX, maxX }
+                            end
 
-                --         break
-                --     end
-                -- end
+                            break
+                        else
+                            local currRow = self.canvas[targetY]
+                            currRow.direct[targetX] = false
+                        end
+                    else
+                        -- local currRow = self.canvas[targetY]
+                        -- currRow.direct[targetX] = false
+                    end
+                end
             end
 
             if not found then
                 self.pixelCanvas.canvas[y][x] = self.clear
                 self.dirty[targetY][targetX] = true
+                self.canvas[targetY].direct[targetX] = false
             end
 
             -- if not foundText then
