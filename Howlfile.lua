@@ -1,8 +1,9 @@
+---@diagnostic disable: undefined-global
+
 package.path = "/" .. shell.dir() .. "/?.lua;" .. package.path
 
 local base64 = require "util.base64"
 
-local mixin = require "howl.class.mixin"
 local mixin = require "howl.class.mixin"
 
 local CopySource = require "howl.files.CopySource"

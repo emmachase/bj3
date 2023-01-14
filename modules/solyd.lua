@@ -82,7 +82,7 @@ function Solyd.useMemo(fun, deps)
     if memo.deps == nil then
         memo.deps = deps
     else
-        for i, v in ipairs(deps) do
+        for i, v in ipairs(deps) do ---@cast deps any[]
             if v ~= memo.deps[i] then
                 memo.value = fun()
                 memo.deps = deps
@@ -114,7 +114,7 @@ function Solyd.useEffect(fun, deps)
     if memo.deps == nil then
         memo.deps = deps
     else
-        for i, v in ipairs(deps) do
+        for i, v in ipairs(deps) do ---@cast deps any[]
             if v ~= memo.deps[i] then
                 memo.unmount()
                 memo.deps = deps
@@ -518,7 +518,7 @@ end
 
 ---Wrap a component function to allow calling it directly without invoking createElement.
 ---@generic P: table
----@param component fun(props: P): table
+---@param component fun(props: P): table?, table?
 ---@return fun(props: P): table
 function Solyd.wrapComponent(name, component)
     return function(props)
