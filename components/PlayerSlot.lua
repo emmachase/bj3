@@ -222,6 +222,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
 
                         setPendingBet(0)
                     end,
+                    allowlist = player.entity.id
                 },
 
                 pendingBet == 0 and Button {
@@ -234,6 +235,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     onClick = function()
                         gameState.players[playerId] = nil
                     end,
+                    allowlist = player.entity.id
                 },
 
                 -- balance >= 1 and ChipStack {
@@ -305,6 +307,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     balance = balance,
                     wager = pendingBet,
                     setWager = setPendingBet,
+                    allowlist = player.entity.id
                 }
             }
         end
@@ -354,10 +357,12 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     text = canAct and "Stand" or "",
                     bg = canAct and colors.red,
                     color = colors.white,
-                    onClick = function()
+                    onClick = function(clicker)
+                        if clicker.id ~= player.entity.id then return end
                         -- setStood(true)
                         player.input = "stand"
                     end,
+                    allowlist = player.entity.id
                 },
                 BigText {
                     x = x+2,
@@ -392,6 +397,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                                 -- props.onDoubleDown()
                                 player.input = "double"
                             end,
+                            allowlist = player.entity.id
                         },
                         Actions.canSplit(player, player.hands[player.activeHand]) and Button {
                             text = "Split",
@@ -402,6 +408,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                                 -- props.onDoubleDown()
                                 player.input = "split"
                             end,
+                            allowlist = player.entity.id
                         },
                     }
                 },
@@ -416,7 +423,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     -- TODO
                     player.input = "hit"
                 end
-            end)
+            end, player.entity.id)
         }
     elseif not gameState.running then
         return {

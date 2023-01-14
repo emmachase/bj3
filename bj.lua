@@ -168,7 +168,7 @@ GameRunner.launchGame(gameState, function()
             hooks.tickAnimations(dt)
         elseif name == "mouse_click" then
             local x, y = e[3], e[4]
-            local node = hooks.findNodeAt(context.aabb, x, y)
+            local node = hooks.findNodeAt(context.aabb, x, y, "dummy-id")
             if node then
                 node.onClick({ name = "dummy", id = "dummy-id" })
             end
@@ -176,7 +176,7 @@ GameRunner.launchGame(gameState, function()
             local x, y = e[3], e[4]
             local player = auth.reconcileTouch(x, y)
             if player then
-                local node = hooks.findNodeAt(context.aabb, x, y)
+                local node = hooks.findNodeAt(context.aabb, x, y, player.id)
                 if node then
                     node.onClick(player)
                 end

@@ -197,7 +197,7 @@ function Solyd.getTopologicalContext(tree, keys)
 end
 
 ---@alias ElementType "element"
----@alias SolydElement { __tag: ElementType, props: table, propsDiff: table, key: any?, component: fun(props: table): SolydElement | SolydElement[] }
+---@alias SolydElement { __tag: ElementType, props: table, propsDiff: table, key: any?, component: fun(props: table): SolydElement | SolydElement[] } | false | nil
 
 ---Create a Solyd element from a comonent and props.
 ---@generic P: table

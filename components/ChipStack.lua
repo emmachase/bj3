@@ -70,7 +70,7 @@ return Solyd.wrapComponent("ChipStack", function(props)
 
     return nil, {
         canvas = {sprite, math.floor(props.x/2)*2, math.floor((props.y - offsetY)/3)*3, chk = props.key ~= nil},
-        aabb = props.onClick and useBoundingBox(props.x, props.y - offsetY, chipStackTop.width, height, props.onClick)
+        aabb = props.onClick and useBoundingBox(props.x, props.y - offsetY, chipStackTop.width, height, props.onClick, props.allowlist)
     }
     -- return Sprite {
     --     sprite = sprite,

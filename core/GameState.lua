@@ -5,7 +5,8 @@ local Wallet = require("modules.wallet")
 local Iterators = require("util.iter")
 local list = Iterators.list
 
----@alias Player { hands: PlayerHand[], activeHand: integer, bet: integer? }
+---@alias PlayerEntity { id: string, name: string, displayName: string }
+---@alias Player { hands: PlayerHand[], activeHand: integer, bet: integer?, entity: PlayerEntity }
 ---@alias Dealer { hand: PlayerHand }
 
 ---@class GameState

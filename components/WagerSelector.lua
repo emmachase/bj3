@@ -86,19 +86,19 @@ return Solyd.wrapComponent("WagerSelector", function(props)
     return nil, { 
         canvas = { sprite, props.x, props.y },
         aabb = _.filterTruthy { __type = "list",
-            minus1   and { x = props.x + x - 3, y = props.y +  1, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 1) end },
-            minus5   and { x = props.x + x - 3, y = props.y + 11, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 5) end },
-            minus10  and { x = props.x + x - 3, y = props.y + 21, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 10) end },
-            minus25  and { x = props.x + x - 3, y = props.y + 31, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 25) end },
-            minus50  and { x = props.x + x - 3, y = props.y + 41, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 50) end },
-            minus100 and { x = props.x + x - 3, y = props.y + 51, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 100) end },
+            minus1   and { allowlist = props.allowlist, x = props.x + x - 3, y = props.y +  1, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 1) end },
+            minus5   and { allowlist = props.allowlist, x = props.x + x - 3, y = props.y + 11, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 5) end },
+            minus10  and { allowlist = props.allowlist, x = props.x + x - 3, y = props.y + 21, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 10) end },
+            minus25  and { allowlist = props.allowlist, x = props.x + x - 3, y = props.y + 31, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 25) end },
+            minus50  and { allowlist = props.allowlist, x = props.x + x - 3, y = props.y + 41, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 50) end },
+            minus100 and { allowlist = props.allowlist, x = props.x + x - 3, y = props.y + 51, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager - 100) end },
 
-            plus1   and { x = props.x + x + minus.width + 10, y = props.y +  1, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 1) end },
-            plus5   and { x = props.x + x + minus.width + 10, y = props.y + 11, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 5) end },
-            plus10  and { x = props.x + x + minus.width + 10, y = props.y + 21, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 10) end },
-            plus25  and { x = props.x + x + minus.width + 10, y = props.y + 31, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 25) end },
-            plus50  and { x = props.x + x + minus.width + 10, y = props.y + 41, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 50) end },
-            plus100 and { x = props.x + x + minus.width + 10, y = props.y + 51, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 100) end },
+            plus1   and { allowlist = props.allowlist, x = props.x + x + minus.width + 10, y = props.y +  1, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 1) end },
+            plus5   and { allowlist = props.allowlist, x = props.x + x + minus.width + 10, y = props.y + 11, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 5) end },
+            plus10  and { allowlist = props.allowlist, x = props.x + x + minus.width + 10, y = props.y + 21, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 10) end },
+            plus25  and { allowlist = props.allowlist, x = props.x + x + minus.width + 10, y = props.y + 31, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 25) end },
+            plus50  and { allowlist = props.allowlist, x = props.x + x + minus.width + 10, y = props.y + 41, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 50) end },
+            plus100 and { allowlist = props.allowlist, x = props.x + x + minus.width + 10, y = props.y + 51, w = 10 + plus.width, h = 10, onClick = function() props.setWager(props.wager + 100) end },
         }
     }
 end)
