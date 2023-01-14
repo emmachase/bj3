@@ -62,6 +62,7 @@ local function playerList(xs)
     end
 end
 
+local startTimeoutAt
 function GameState:playersReady()
     local ready, count = 0, 0
     for player in playerList(self.players) do
@@ -69,6 +70,24 @@ function GameState:playersReady()
             ready = ready + 1
         end
         count = count + 1
+    end
+
+    if count > 0 and startTimeoutAt == nil then
+        startTimeoutAt = os.epoch("utc") + 60*1000
+    elseif count == 0 then
+        startTimeoutAt = nil
+    end
+
+    if startTimeoutAt and os.epoch("utc") > startTimeoutAt then
+        for player in playerList(self.players) do
+            if not player.bet then
+                -- TODO
+                -- cashoutPlayer(player)
+                error("TODO")
+            end
+        end
+        startTimeoutAt = nil
+        return ready > 0
     end
 
     return count > 0 and ready == count
@@ -147,8 +166,13 @@ local function runGame(state)
                 -- print("Waiting for player")
                 player.requestInput = true
 
+                local timeoutAt = os.epoch("utc") + 30*1000
                 while player.input == nil do
                     coroutine.yield()
+
+                    if os.epoch("utc") > timeoutAt then
+                        player.input = "stand"
+                    end
                 end
 
                 player.requestInput = false
