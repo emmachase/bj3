@@ -73,10 +73,13 @@ local Main = Solyd.wrapComponent("Main", function(props)
 
         _.rangeMap(3, function(i)
             local width = math.floor((canvas.width - 10)/3)-2
+            local player = props.gameState.players[i]
             return PlayerSlot {
                 x = 3 + (i-1)*(width+6),
                 width = width, height = 75,
                 playerId = i,
+                player = player,
+                timeout = player and player.timeoutAt and (1 - (os.epoch("utc") - player.startTimeoutAt) / (player.timeoutAt - player.startTimeoutAt)) or nil
                 -- onStand = function()
                 --     setStandCount(standCount + 1)
                 -- end

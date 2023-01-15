@@ -18,6 +18,7 @@ local list = Iter.list
 
 local Sprite = require("components.Sprite")
 local BigText = require("components.BigText")
+local Rect = require("components.Rect")
 local ChipStack = require("components.ChipStack")
 local ChipGroup = require("components.ChipGroup")
 local Button = require("components.Button")
@@ -56,7 +57,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
     local gameState = Solyd.useContext("gameState") ---@type GameState
     local playerId = props.playerId
     -- local playerId, setPlayerId = Solyd.useState--[[@as UseState<integer?>]](nil)
-    local player = gameState.players[playerId]
+    local player = props.player -- gameState.players[playerId]
 
     -- local isFilled, setFilled = Solyd.useState(false)
     local isFilled = player ~= nil
@@ -308,6 +309,14 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     wager = pendingBet,
                     setWager = setPendingBet,
                     allowlist = player.entity.id
+                },
+                props.timeout and Rect {
+                    x = x,
+                    y = y+props.height,
+                    width = props.timeout * props.width,
+                    height = 1,
+                    maxWidth = props.width,
+                    color = colors.red,
                 }
             }
         end
@@ -412,6 +421,14 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                         },
                     }
                 },
+                props.timeout and Rect {
+                    x = x,
+                    y = y+props.height,
+                    width = props.timeout * props.width,
+                    height = 1,
+                    maxWidth = props.width,
+                    color = colors.red,
+                }
             --     }
             -- }
             -- getHandValue(cards, true, true) > 21 and BigText { text = "UR A FUCKING IDIOT", x=x+10, y=y-10, color=colors.red },

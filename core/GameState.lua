@@ -70,11 +70,19 @@ function GameState:playersReady()
             ready = ready + 1
         end
         count = count + 1
+
+        if player.timeoutAt == nil then
+            startTimeoutAt = os.epoch("utc") + 20*1000
+
+            -- Reset the timer for all players
+            for player2 in playerList(self.players) do
+                player2.timeoutAt = startTimeoutAt
+                player2.startTimeoutAt = os.epoch("utc")    
+            end
+        end
     end
 
-    if count > 0 and startTimeoutAt == nil then
-        startTimeoutAt = os.epoch("utc") + 60*1000
-    elseif count == 0 then
+    if count == 0 then
         startTimeoutAt = nil
     end
 
@@ -141,9 +149,13 @@ local function runGame(state)
 
     -- Game is starting
     state.running = true
+    startTimeoutAt = nil
 
     -- Set bets
     for player in playerList(state.players) do
+        player.timeoutAt = nil
+        player.startTimeoutAt = nil
+
         player.hands[1].bet = player.bet
     end
 
@@ -166,7 +178,10 @@ local function runGame(state)
                 -- print("Waiting for player")
                 player.requestInput = true
 
-                local timeoutAt = os.epoch("utc") + 30*1000
+                local timeoutAt = os.epoch("utc") + 10*1000
+                player.timeoutAt = timeoutAt
+                player.startTimeoutAt = os.epoch("utc")
+
                 while player.input == nil do
                     coroutine.yield()
 
@@ -176,6 +191,8 @@ local function runGame(state)
                 end
 
                 player.requestInput = false
+                player.timeoutAt = nil
+                player.startTimeoutAt = nil
 
                 state:processAction(player, player.hands[player.activeHand], player.input)
                 player.input = nil
