@@ -6,3 +6,4 @@ flags
 *-old.lua
 pprint.lua
 build
+/config.lua
