@@ -29,13 +29,6 @@ local Main = Solyd.wrapComponent("Main", function(props)
 
     return _.flat {
         BigText { text="Lyqyd Blackjack", x=124, y=10, bg=colors.lime },
-        BasicText { 
-            text = "To deposit, run /pay " .. Krist.config.metaname .. "@" .. Krist.config.name .. ".kst <amount>",
-            align = "center",
-            width = canvas.width/2,
-            x = 1,
-            y = canvas.height/3
-        },
         -- BigText { text="PAYS 2:1   BLACKJACK PAYS 3:2   PAYS 2:1", x=55, y=120, bg=colors.green, color=colors.red },
         -- BigText { text="Dealer must stand on all 17s", x=91, y=133, bg=colors.green },
 
@@ -96,6 +89,14 @@ local Main = Solyd.wrapComponent("Main", function(props)
         end),
 
         Dealer {},
+
+        BasicText { 
+            text = "To deposit, run /pay " .. Krist.config.metaname .. "@" .. Krist.config.name .. ".kst <amount>",
+            align = "center",
+            width = canvas.width/2,
+            x = 1,
+            y = canvas.height/3
+        },
     }, {
         canvas = {canvas, 1, 1},
         gameState = props.gameState or {}
@@ -167,7 +168,11 @@ GameRunner.launchGame(gameState, function()
         display.ccCanvas:composite({display.bgCanvas, 1, 1}, unpack(context.canvas))
         display.ccCanvas:outputDirty(display.mon)
         local t2 = os.epoch("utc")
-        -- print("Render time: " .. (t2-t1) .. "ms")
+
+        if deltaTimer and gameState.players[1] == nil and gameState.players[2] == nil and gameState.players[3] == nil then
+            os.cancelTimer(deltaTimer)
+            deltaTimer = nil
+        end
 
         local e = { os.pullEvent() }
         local name = e[1]
@@ -184,6 +189,10 @@ GameRunner.launchGame(gameState, function()
             local node = hooks.findNodeAt(context.aabb, x, y, "dummy-id")
             if node then
                 node.onClick({ name = "anemonemma", id = "dummy-id" })
+            end
+
+            if deltaTimer == nil then
+                deltaTimer = os.startTimer(0)
             end
         elseif name == "monitor_touch" then
             local x, y = e[3], e[4]
