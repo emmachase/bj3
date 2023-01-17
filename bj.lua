@@ -9,6 +9,7 @@ local Solyd = require("modules.solyd")
 local hooks = require("modules.hooks")
 local useCanvas = hooks.useCanvas
 
+local BasicText = require("components.BasicText")
 local BigText = require("components.BigText")
 local ChipStack = require("components.ChipStack")
 local PlayerSlot = require("components.PlayerSlot")
@@ -28,6 +29,13 @@ local Main = Solyd.wrapComponent("Main", function(props)
 
     return _.flat {
         BigText { text="Lyqyd Blackjack", x=124, y=10, bg=colors.lime },
+        BasicText { 
+            text = "To deposit, run /pay " .. Krist.config.metaname .. "@" .. Krist.config.name .. ".kst <amount>",
+            align = "center",
+            width = canvas.width/2,
+            x = 1,
+            y = canvas.height/3
+        },
         -- BigText { text="PAYS 2:1   BLACKJACK PAYS 3:2   PAYS 2:1", x=55, y=120, bg=colors.green, color=colors.red },
         -- BigText { text="Dealer must stand on all 17s", x=91, y=133, bg=colors.green },
 

@@ -9,6 +9,7 @@ local gameState ---@type GameState
 
 function Krist.start(newGameState)
     config = dofile("config.lua")
+    Krist.config = config
 
     local startUrl = http.post("https://" .. config.node .. "/ws/start", "privatekey="..config.pkey)
     local startData = textutils.unserializeJSON(startUrl.readAll())
@@ -69,8 +70,8 @@ end
 function Krist.handleTransaction(transaction)
     if transaction.to == config.address then
         local meta = commonmeta.parse(transaction.metadata)
-        if transaction.sent_name == config.name then -- meta.domain == config.name then
-            local target = (meta and meta.meta.username) or transaction.sent_metaname
+        if transaction.sent_name == config.name and transaction.sent_metaname == config.metaname then -- meta.domain == config.name then
+            local target = meta and meta.meta.username
             local uuid = findUUID(target)
             if not uuid then
                 Krist.refund("error=No such player", transaction, meta)

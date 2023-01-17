@@ -95,7 +95,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
         return canv
     end, { clearColor, props.width, props.height })
 
-    local x, y = props.x, Display.ccCanvas.pixelCanvas.height-props.height-2
+    local x, y = props.x, Display.ccCanvas.pixelCanvas.height-props.height-2-3
 
     local t = useAnimation(#cards ~= #afCards)
     -- print(#cards, #afCards)
@@ -190,10 +190,11 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             local num1Chips   = math.floor((pendingBet - num100Chips*100 - num25Chips*25 - num10Chips*10 - num5Chips*5)/1)
 
             local wallet = Wallet.getWallet(player.entity.id)
-            local balance = wallet.balance - pendingBet
+            local allowedBet = math.min(wallet.balance, 250)
+            local balance = allowedBet - pendingBet
             if balance < 0 then
                 pendingBet = setPendingBet(pendingBet + balance)
-                balance = wallet.balance - pendingBet
+                balance = allowedBet - pendingBet
             end
 
             return {
@@ -310,6 +311,14 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     setWager = setPendingBet,
                     allowlist = player.entity.id
                 },
+                Rect {
+                    x = x,
+                    y = y+props.height,
+                    width = props.width,
+                    height = 3,
+                    maxWidth = props.width,
+                    color = colors.green,
+                },
                 props.timeout and Rect {
                     x = x,
                     y = y+props.height,
@@ -420,6 +429,14 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                             allowlist = player.entity.id
                         },
                     }
+                },
+                Rect {
+                    x = x,
+                    y = y+props.height,
+                    width = props.width,
+                    height = 3,
+                    maxWidth = props.width,
+                    color = colors.green,
                 },
                 props.timeout and Rect {
                     x = x,
