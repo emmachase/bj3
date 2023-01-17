@@ -7,3 +7,4 @@ flags
 pprint.lua
 build
 /config.lua
+logs

@@ -25,6 +25,7 @@ local Button = require("components.Button")
 local Flex = require("components.Flex")
 local WagerSelector = require("components.WagerSelector")
 local HandModule = require("components.Hand")
+local RenderCanvas = require("components.RenderCanvas")
 local Hand, getDeckDims = HandModule.Hand, HandModule.getDeckDims
 
 local AnimatedPlayerHands = require("components.AnimatedPlayerHands")
@@ -32,6 +33,7 @@ local Payout = require("components.Payout")
 
 local loadRIF = require("modules.rif")
 local playerSlotEmpty = loadRIF("cum")
+local hitHintSprite = loadRIF("hit")
 
 local animDuration = 0.5
 
@@ -200,6 +202,8 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             return {
                 Sprite { sprite = hitSprite, x = x, y = y },
 
+                false, -- canAct and Sprite { sprite = hitHintSprite, x = x, y = y } or false,
+
                 playerName, playerBalance,
 
                 BigText { 
@@ -336,6 +340,9 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
             --     children = {
                 Sprite { sprite = hitSprite, x = x, y = y },
 
+                -- canAct and Sprite { sprite = hitHintSprite, x = x, y = y } or false,
+                canAct and RenderCanvas { canvas = hitHintSprite, x = x, y = y } or false,
+
                 playerName, playerBalance,
 
                 ChipGroup {
@@ -464,7 +471,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
              
                 -- key = "waiting",
                 -- children = 
-                Sprite { sprite = emptySprite, x = x, y = y }
+                Sprite { sprite = emptySprite, x = x, y = y },
             
         }, {
             -- canvas = canvas,
