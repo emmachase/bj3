@@ -1,3 +1,5 @@
+local logger = require("modules.logger")
+
 local commonmeta = require("core.krist.commonmeta")
 local wallets = require("modules.wallet")
 -- local sensor = peripheral.find("manipulator")
@@ -59,6 +61,8 @@ function Krist.pay(meta, to, amount)
         return
     end
 
+    logger.log("Sending " .. amount .. " KST to " .. to .. " with metadata " .. meta)
+
     http.request("https://" .. config.node .. "/transactions", textutils.serializeJSON({
         privatekey = config.pkey,
         to = to:lower(),
@@ -71,6 +75,8 @@ function Krist.handleTransaction(transaction)
     if transaction.to == config.address then
         local meta = commonmeta.parse(transaction.metadata)
         if transaction.sent_name == config.name and transaction.sent_metaname == config.metaname then -- meta.domain == config.name then
+            logger.log("Received transaction from " .. transaction.from .. " (user: " .. (meta and meta.meta.username or "UNKNOWN") .. ") of " .. transaction.value .. " KST")
+
             local target = meta and meta.meta.username
             local uuid = findUUID(target)
             if not uuid then

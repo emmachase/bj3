@@ -74,6 +74,10 @@ return {
     newDeck = newDeck,
     getHandValue = getHandValue,
 
+    cardToString = function(card)
+        return card.rank .. " of " .. card.suit
+    end,
+
     suits = suits,
     ranks = ranks,
     baseValue = baseValue,

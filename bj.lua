@@ -1,6 +1,9 @@
 --- Imports
 local _ = require("util.score")
 
+local logger = require("modules.logger")
+logger.log("starting...")
+
 local display = require("modules.display")
 local auth = require("modules.auth")
 auth.initialize(display.mon)
@@ -229,6 +232,8 @@ GameRunner.launchGame(gameState, function()
 end)
 
 Krist.stop()
+logger.log("exiting...")
+logger.close()
 
 display.mon.setBackgroundColor(colors.black)
 display.mon.clear()

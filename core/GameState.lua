@@ -1,3 +1,5 @@
+local logger = require("modules.logger")
+
 local Actions = require("core.Actions")
 local Cards = require("modules.cards")
 local Wallet = require("modules.wallet")
@@ -127,7 +129,7 @@ function GameState:playersReady()
 end
 
 local cardUid = 0
-function GameState:dealTo(hand, hidden)
+function GameState:dealTo(player, hand, hidden)
     local card = table.remove(self.deck, 1)
     cardUid = cardUid + 1
     card.uid = cardUid
@@ -135,14 +137,24 @@ function GameState:dealTo(hand, hidden)
         card.hidden = true
     end
 
+    local name
+    if player == self.dealer then
+        name = "Dealer"
+    else
+        name = player.entity.name
+    end
+
+    logger.log(name .. " was dealt " .. Cards.cardToString(card) .. " (uid: " .. card.uid .. ")")
+
     table.insert(hand, card)
     waitForAnimation(card.uid)
     coroutine.yield() -- Allow animation buffer to clear
 end
 
 function GameState:processAction(player, hand, input)
+    logger.log(player.entity.name .. " input: " .. input)
     if input == "hit" then
-        self:dealTo(hand)
+        self:dealTo(player, hand)
     elseif input == "stand" then
         hand.didStand = true
     elseif input == "double" then
@@ -150,7 +162,7 @@ function GameState:processAction(player, hand, input)
         wallet.balance = wallet.balance - hand.bet
         player.bet = player.bet + hand.bet
         hand.bet = hand.bet * 2
-        self:dealTo(hand)
+        self:dealTo(player, hand)
         hand.didDoubleDown = true
     elseif input == "split" then
         local wallet = Wallet.getWallet(player.entity.id)
@@ -173,6 +185,7 @@ local function runGame(state)
     end
 
     -- Game is starting
+    logger.log("Game is starting")
     state.running = true
     startTimeoutAt = nil
 
@@ -182,21 +195,22 @@ local function runGame(state)
         player.startTimeoutAt = nil
 
         player.hands[1].bet = player.bet
+        logger.log("Player " .. player.entity.name .. " bet " .. player.bet)
     end
 
     for i = 1, 2 do
         for player in playerList(state.players) do
             -- print("Dealing to player")
-            state:dealTo(player.hands[1])
+            state:dealTo(player, player.hands[1])
         end
         -- print("Dealing to dealer")
-        state:dealTo(state.dealer.hand, --[[hidden:]] i == 2)
+        state:dealTo(state.dealer, state.dealer.hand, --[[hidden:]] i == 2)
     end
 
     for player in playerList(state.players) do
         while true do
             if #player.hands[player.activeHand] < 2 then
-                state:dealTo(player.hands[player.activeHand])
+                state:dealTo(player, player.hands[player.activeHand])
             end
 
             while Actions.canHit(player, player.hands[player.activeHand]) do
@@ -223,7 +237,7 @@ local function runGame(state)
                 player.input = nil
 
                 if #player.hands[player.activeHand] < 2 then
-                    state:dealTo(player.hands[player.activeHand])
+                    state:dealTo(player, player.hands[player.activeHand])
                 end
             end
 
@@ -254,7 +268,7 @@ local function runGame(state)
     -- Dealer hits until 17
     while Actions.canDealerHit(state.dealer, state.dealer.hand) do
         -- print("Waiting for dealer")
-        state:dealTo(state.dealer.hand)
+        state:dealTo(state.dealer, state.dealer.hand)
     end
 
     local displayTimer = os.startTimer(1)
@@ -298,6 +312,7 @@ local function runGame(state)
         end
     end
 
+    logger.log("Game is over")
     state:resetGame()
 
     return runGame(state) -- Tail call optimization go brr
