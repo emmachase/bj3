@@ -11,6 +11,7 @@ else
     mon = term
 end
 
+mon.setCursorBlink(false)
 
 -- Set Riko Palette
 require("util.riko")(mon)

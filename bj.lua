@@ -169,9 +169,18 @@ GameRunner.launchGame(gameState, function()
         display.ccCanvas:outputDirty(display.mon)
         local t2 = os.epoch("utc")
 
-        if deltaTimer and gameState.players[1] == nil and gameState.players[2] == nil and gameState.players[3] == nil then
-            os.cancelTimer(deltaTimer)
-            deltaTimer = nil
+        if gameState.players[1] == nil and gameState.players[2] == nil and gameState.players[3] == nil then
+            if deltaTimer then
+                os.cancelTimer(deltaTimer)
+                deltaTimer = nil
+            end
+        else
+            local clock = os.epoch("utc")
+            local dt = (clock - lastClock)/1000
+            if dt > 0.1 then
+                -- Timer must've died, restart it
+                deltaTimer = os.startTimer(0)
+            end
         end
 
         local e = { os.pullEvent() }
