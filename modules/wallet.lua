@@ -5,7 +5,7 @@ local function getWallet(playerId)
     if not wallet then
         wallet = {
             playerId = playerId,
-            balance = 1000
+            balance = 0
         }
         wallets[playerId] = wallet
     end

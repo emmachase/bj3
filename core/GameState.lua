@@ -1,6 +1,7 @@
 local Actions = require("core.Actions")
 local Cards = require("modules.cards")
 local Wallet = require("modules.wallet")
+local Krist = require("core.krist")
 
 local Iterators = require("util.iter")
 local list = Iterators.list
@@ -41,6 +42,23 @@ function GameState:resetGame()
     self.running = false
 end
 
+function GameState:removePlayer(playerId)
+    local player = self.players[playerId]
+    self.players[playerId] = nil
+
+    -- Check if there are any remaining players with the same UUID
+    for _, player2 in pairs(self.players) do
+        if player2.entity.id == player.entity.id then
+            return
+        end
+    end
+
+    -- Otherwise, we need to cash out the player
+    local wallet = Wallet.getWallet(player.entity.id)
+    Krist.pay("message=Congratulations! Here are your winnings!", player.entity.name .. "@sc.kst", wallet.balance)
+    wallet.balance = 0
+end
+
 local function waitForAnimation(uid)
     coroutine.yield("animationFinished", uid)
 end
@@ -56,13 +74,27 @@ local function playerList(xs)
         repeat
             i = i - 1
             if xs[i] then
-                return xs[i]
+                return xs[i], i
             end
         until i <= 1
     end
 end
 
 local startTimeoutAt
+function GameState:resetTimeouts(soft)
+    if soft and startTimeoutAt == nil then
+        return
+    end
+
+    startTimeoutAt = os.epoch("utc") + 20*1000
+
+    -- Reset the timer for all players
+    for player2 in playerList(self.players) do
+        player2.timeoutAt = startTimeoutAt
+        player2.startTimeoutAt = os.epoch("utc")
+    end
+end
+
 function GameState:playersReady()
     local ready, count = 0, 0
     for player in playerList(self.players) do
@@ -72,13 +104,7 @@ function GameState:playersReady()
         count = count + 1
 
         if player.timeoutAt == nil then
-            startTimeoutAt = os.epoch("utc") + 20*1000
-
-            -- Reset the timer for all players
-            for player2 in playerList(self.players) do
-                player2.timeoutAt = startTimeoutAt
-                player2.startTimeoutAt = os.epoch("utc")    
-            end
+            self:resetTimeouts()
         end
     end
 
@@ -87,11 +113,10 @@ function GameState:playersReady()
     end
 
     if startTimeoutAt and os.epoch("utc") > startTimeoutAt then
-        for player in playerList(self.players) do
+        for player, playerId in playerList(self.players) do
             if not player.bet then
-                -- TODO
-                -- cashoutPlayer(player)
-                error("TODO")
+                -- Remove player
+                self:removePlayer(playerId)
             end
         end
         startTimeoutAt = nil

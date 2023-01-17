@@ -27,7 +27,11 @@ local function launchGame(gameState, mainFunction)
     local eventBacklog = {}
 
     while true do
-        local e = (eventFilter == nil and #eventBacklog > 0) and table.remove(eventBacklog, 1) or { os.pullEvent() }
+        local e = (eventFilter == nil and #eventBacklog > 0) and table.remove(eventBacklog, 1) or { os.pullEventRaw() }
+
+        if e[1] == "terminate" then
+            break
+        end
 
         if eventFilter and e[1] ~= eventFilter then
             eventBacklog[#eventBacklog+1] = e

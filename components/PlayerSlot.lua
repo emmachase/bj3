@@ -234,7 +234,7 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     bg = colors.red,
                     color = colors.white,
                     onClick = function()
-                        gameState.players[playerId] = nil
+                        gameState:removePlayer(playerId)
                     end,
                     allowlist = player.entity.id
                 },

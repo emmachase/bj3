@@ -17,6 +17,7 @@ local RenderCanvas = require("components.RenderCanvas")
 local Dealer, getDealerContext = DealerModule.Dealer, DealerModule.getDealerContext
 local Core = require("core.GameState")
 local GameRunner = require("core.GameRunner")
+local Krist = require("core.krist")
 
 local loadRIF = require("modules.rif")
 local banner = loadRIF("hi")
@@ -143,6 +144,7 @@ local function diffCanvasStack(newStack)
 end
 
 local gameState = Core.GameState.new()
+Krist.start(gameState)
 
 local deltaTimer = os.startTimer(0)
 GameRunner.launchGame(gameState, function()
@@ -173,7 +175,7 @@ GameRunner.launchGame(gameState, function()
             local x, y = e[3], e[4]
             local node = hooks.findNodeAt(context.aabb, x, y, "dummy-id")
             if node then
-                node.onClick({ name = "dummy", id = "dummy-id" })
+                node.onClick({ name = "anemonemma", id = "dummy-id" })
             end
         elseif name == "monitor_touch" then
             local x, y = e[3], e[4]
@@ -186,6 +188,25 @@ GameRunner.launchGame(gameState, function()
             else
                 -- TODO: Yell at the players
             end
+        elseif name == "websocket_message" then
+            local data = textutils.unserializeJSON(e[3])
+            if data.type == "event" then
+                if data.event == "transaction" then
+                    Krist.handleTransaction(data.transaction)
+                end
+            end
+        elseif name == "websocket_closed" then
+            Krist.restart()
+            deltaTimer = os.startTimer(0) -- Make sure the timer is still running
         end
     end
 end)
+
+Krist.stop()
+
+display.mon.setBackgroundColor(colors.black)
+display.mon.clear()
+if display.mon.setTextScale then display.mon.setTextScale(1) end
+display.mon.setCursorPos(1, 1)
+display.mon.setTextColor(colors.white)
+display.mon.write("Blackjack has exited.")
