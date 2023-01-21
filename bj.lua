@@ -135,7 +135,11 @@ local function diffCanvasStack(newStack)
 
     -- Mark rectangle of removed canvases on bgCanvas (TODO: using bgCanvas is a hack)
     for _, canvas in pairs(removed) do
-        display.bgCanvas:dirtyRect(canvas[2], canvas[3], canvas[1].width, canvas[1].height)
+        if canvas[1].brand == "TextCanvas" then
+            display.bgCanvas:dirtyRect(canvas[2], canvas[3], canvas[1].width*2, canvas[1].height*3)
+        else
+            display.bgCanvas:dirtyRect(canvas[2], canvas[3], canvas[1].width, canvas[1].height)
+        end
     end
 
     -- For each kept canvas, mark the bounds if the new bounds are different
@@ -145,8 +149,13 @@ local function diffCanvasStack(newStack)
         if oldCanvas then
             if oldCanvas[2] ~= newCanvas[2] or oldCanvas[3] ~= newCanvas[3] then
                 -- TODO: Optimize this?
-                display.bgCanvas:dirtyRect(oldCanvas[2], oldCanvas[3], oldCanvas[1].width, oldCanvas[1].height)
-                display.bgCanvas:dirtyRect(newCanvas[2], newCanvas[3], newCanvas[1].width, newCanvas[1].height)
+                if oldCanvas[1].brand == "TextCanvas" then
+                    display.bgCanvas:dirtyRect(oldCanvas[2], oldCanvas[3], oldCanvas[1].width*2, oldCanvas[1].height*3)
+                    display.bgCanvas:dirtyRect(newCanvas[2], newCanvas[3], newCanvas[1].width*2, newCanvas[1].height*3)
+                else
+                    display.bgCanvas:dirtyRect(oldCanvas[2], oldCanvas[3], oldCanvas[1].width, oldCanvas[1].height)
+                    display.bgCanvas:dirtyRect(newCanvas[2], newCanvas[3], newCanvas[1].width, newCanvas[1].height)
+                end
             end
         end
     end
