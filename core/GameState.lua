@@ -4,6 +4,7 @@ local Actions = require("core.Actions")
 local Cards = require("modules.cards")
 local Wallet = require("modules.wallet")
 local Krist = require("core.krist")
+local speaker = require("modules.speaker")
 
 local Iterators = require("util.iter")
 local list = Iterators.list
@@ -142,6 +143,7 @@ function GameState:dealTo(player, hand, hidden)
         name = "Dealer"
     else
         name = player.entity.name
+        speaker.playSound("minecraft:block.note_block.basedrum")
     end
 
     logger.log(name .. " was dealt " .. Cards.cardToString(card) .. " (uid: " .. card.uid .. ")")
@@ -153,6 +155,7 @@ end
 
 function GameState:processAction(player, hand, input)
     logger.log(player.entity.name .. " input: " .. input)
+    speaker.playSound("minecraft:block.note_block.hat")
     if input == "hit" then
         self:dealTo(player, hand)
     elseif input == "stand" then

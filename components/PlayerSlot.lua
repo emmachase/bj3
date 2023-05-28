@@ -6,6 +6,7 @@ local Cards = require("modules.cards")
 local Actions = require("core.Actions")
 local Display = require("modules.display")
 local Wallet = require("modules.wallet")
+local speaker = require("modules.speaker")
 
 local Canvas = require("modules.canvas")
 local PixelCanvas = Canvas.PixelCanvas
@@ -312,7 +313,10 @@ return Solyd.wrapComponent("PlayerSlot", function(props)
                     y = y + 1,
                     balance = balance,
                     wager = pendingBet,
-                    setWager = setPendingBet,
+                    setWager = function(...)
+                        speaker.playSound("minecraft:block.note_block.hat")
+                        setPendingBet(...)
+                    end,
                     allowlist = player.entity.id
                 },
                 Rect {

@@ -80,7 +80,7 @@ function Krist.handleTransaction(transaction)
             local target = meta and meta.meta.username
             local uuid = findUUID(target)
             if not uuid then
-                Krist.refund("error=No such player", transaction, meta)
+                Krist.refund("error=You're not part of the game, click a spot to join first", transaction, meta)
                 return
             end
 

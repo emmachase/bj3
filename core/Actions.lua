@@ -2,6 +2,7 @@ local logger = require("modules.logger")
 
 local Cards = require("modules.cards")
 local Wallet = require("modules.wallet")
+local speaker = require("modules.speaker")
 
 local Actions = {}
 
@@ -56,24 +57,31 @@ function Actions.payout(player, hand, dealer)
     local name = player.entity.name
 
     if (playerTotal == 21 and #hand == 2) and not (dealerTotal == 21 and #dealer.hand == 2) then
+        speaker.playSound("kristpay-client:coins_large")
         logger.log(name .. " got Blackjack!")
         return hand.bet * 2.5
     elseif playerTotal > 21 then
+        speaker.playSound("minecraft:block.note_block.pling", 1, 0.5)
         logger.log(name .. " busted!")
         return 0, "Bust"
     elseif (dealerTotal == 21 and #dealer.hand == 2) and not (playerTotal == 21 and #hand == 2) then
+        speaker.playSound("minecraft:block.note_block.pling", 1, 0.5)
         logger.log(name .. " lost to Dealer Blackjack!")
         return 0, "Dealer Blackjack"
     elseif dealerTotal > 21 then
+        speaker.playSound("kristpay-client:coins_tiny")
         logger.log(name .. " won against Dealer Bust!")
         return hand.bet * 2, "House Bust!"
     elseif playerTotal == dealerTotal then
+        speaker.playSound("minecraft:block.note_block.pling")
         logger.log(name .. " pushed!")
         return hand.bet, "Push"
     elseif playerTotal > dealerTotal then
+        speaker.playSound("kristpay-client:coins_tiny")
         logger.log(name .. " won!")
         return hand.bet * 2, "You Win!"
     else
+        speaker.playSound("minecraft:block.note_block.pling")
         logger.log(name .. " lost!")
         return 0, "You Lose"
     end

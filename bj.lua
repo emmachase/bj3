@@ -94,7 +94,7 @@ local Main = Solyd.wrapComponent("Main", function(props)
         Dealer {},
 
         BasicText { 
-            text = "To deposit, run /pay " .. Krist.config.metaname .. "@" .. Krist.config.name .. ".kst <amount>",
+            text = "Click a spot to join, then to deposit run /pay " .. Krist.config.metaname .. "@" .. Krist.config.name .. ".kst <amount>",
             align = "center",
             width = canvas.width/2,
             x = 1,
